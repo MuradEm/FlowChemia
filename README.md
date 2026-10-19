@@ -1,8 +1,9 @@
 # FlowChemia frontend
 
-Minimal React + TypeScript + Vite development environment. Product screens,
-authentication and API integration will be built together with the product
-owner. The current page is only a placeholder.
+React + TypeScript + Vite frontend. The first screen is an employee home with
+pending colleague check-ins, participation history and a working demo survey
+flow. Design and application behavior are developed together with the product
+owner. Login and backend integration are not implemented yet.
 
 ## Requirements
 
@@ -19,8 +20,12 @@ npm run dev
 The development server uses port 5173. It supports React Fast Refresh when you
 edit files. Start with `src/App.tsx`; global styles are in `src/styles.css`.
 
+On Windows PowerShell, use `npm.cmd ci` and `npm.cmd run dev` if the system
+blocks the `npm.ps1` script; no execution-policy change is required.
+
 ```sh
 npm run typecheck
+npm test
 npm run build
 npm run preview
 ```
@@ -28,7 +33,41 @@ npm run preview
 `build` checks TypeScript and writes production assets to `dist/`. `preview`
 serves that build on port 4173. It is a local build check, not a deployment.
 Both servers bind to loopback and fail if their port is already occupied.
-There are no application tests yet because no product behavior is implemented.
+`npm test` runs three state tests covering progress restoration, final outcomes,
+colleague replacement and exhausted alternatives. GitHub Actions runs these
+tests and the production build. Desktop/mobile flows were also checked in
+Chromium, with an automated accessibility scan of the overview and survey.
+
+## Employee home demo
+
+The page uses your design kit's logo, light theme and teal/cyan/amber palette.
+It shows a sample employee, fictional company and two pending colleague
+surveys. The sidebar links jump to the overview, check-ins and participation.
+
+- Start a check-in to answer five rating questions: three skills, enjoyment
+  and collaboration effectiveness. Each accepts 1–5 or explicit Not observed.
+- All five questions must be answered before completion. There is no countdown
+  or deadline; the two-minute label is a design target.
+- Skip has a confirmation step and shows the agreed 60% participation credit;
+  completion shows 100%. These are sample participation percentages, not
+  employee performance scores or real company reward points.
+- Try another colleague keeps the original assignment slot, excludes previously
+  used sample colleagues and supplies no credit until an outcome. When no
+  colleague remains, it closes the sample slot without awarding credit.
+- Completing/skipping the two assignments reveals an all-caught-up state.
+  Reset demo restores the original examples.
+
+The page is explicitly labeled Demo data. **No API requests are made.**
+Only assignment statuses and replacement history persist in this browser's
+local storage under `flowchemia.employee-home.demo.v1`. Actual selected ratings
+are not stored or sent anywhere; closing a survey discards them. Reset clears
+the sample progress. If browser storage is unavailable, progress is kept only
+until reload, with an on-screen notice.
+
+`src/demo.ts` is an isolated sample-data/state module. Its fixed sample
+questions are not the production allocator. When wiring authentication and
+the real API, use the exact questions returned by assignment detail and the
+server's authoritative outcomes, permissions and participation credit.
 
 ## API development
 
