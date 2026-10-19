@@ -1,9 +1,9 @@
 # FlowChemia frontend
 
-React + TypeScript + Vite frontend. The first screen is an employee home with
-pending colleague check-ins, participation history and a working demo survey
-flow. Design and application behavior are developed together with the product
-owner. Login and backend integration are not implemented yet.
+React + TypeScript + Vite frontend with login, company selection, employee
+home, server-issued colleague surveys and participation history. Design and
+application behavior are developed together with the product owner. A separate,
+explicit demo remains available for design review without the backend.
 
 ## Requirements
 
@@ -33,14 +33,57 @@ npm run preview
 `build` checks TypeScript and writes production assets to `dist/`. `preview`
 serves that build on port 4173. It is a local build check, not a deployment.
 Both servers bind to loopback and fail if their port is already occupied.
-`npm test` runs three state tests covering progress restoration, final outcomes,
-colleague replacement and exhausted alternatives. GitHub Actions runs these
-tests and the production build. Desktop/mobile flows were also checked in
-Chromium, with an automated accessibility scan of the overview and survey.
+`npm test` runs eleven API-client and demo-state tests covering authenticated
+requests, exact question IDs/null answers, failures, cancellation, no automatic
+mutation retry, progress restoration and replacement. GitHub Actions runs these
+tests and the production build. Real browser flows were also checked against a
+disposable PostgreSQL/API instance, including desktop/mobile accessibility.
+
+## Login and real check-ins
+
+The initial screen is login. Start the sibling
+[FlowChemia-API](https://github.com/MuradEm/FlowChemia-API) backend and its
+database before signing in. Follow its
+[Windows/local setup guide](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/local-frontend.md)
+to provision the first account and company on a fresh database. There is no
+default password, public signup, or account creation in this frontend.
+
+- Sign in with your company account. One active company opens automatically;
+  multiple companies show a selector. No membership shows an invitation-required
+  state. Switch company refreshes membership and clears the previous company's
+  screen before loading another.
+- The home page reads your own open assignments and latest participation entries.
+  It does not fetch coworker responses, scores, company member lists or reports.
+  Participation counts describe recent credit entries (the API returns up to
+  200), while open check-ins reflect the current actionable list.
+- Opening a survey fetches its exact assigned question IDs, wording, order,
+  question count and deadline. Older shorter surveys remain supported; the
+  browser never replaces the server's questions with demo questions.
+- Submit, skip and colleague replacement call their authenticated endpoints.
+  Participation credit is displayed from the API, not minted by the browser.
+  Inactive-colleague assignments provide replacement rather than invalid rating
+  or skip actions. Milestones show their actual deadline; periodic surveys have
+  no expiry.
+- Loading, failed connections and empty results are different states. Real mode
+  never falls back to sample data. Refresh updates the list and history.
+- Pending actions disable repeated clicks. A lost/failed mutation response is
+  not automatically retried; refresh the list to confirm the result first.
+  Closing a survey discards unsent choices. Submitted answers are stored by the
+  backend and cannot be edited through this screen.
+- Session tokens and real company/feedback data stay in memory. Reloading the
+  page requires signing in again. Session expiry returns to login; Sign out
+  revokes the current server session and immediately clears the local screen.
+  If server logout fails, local sign-out still completes with an accurate notice.
+
+`src/api.ts` is the typed same-origin API client. `AccountWorkspace.tsx` handles
+profile/company selection, `LiveWorkspace.tsx` handles current server state,
+`EmployeeHome.tsx` renders the shared view, and `SurveyDialog.tsx` renders the
+assigned survey. The API enforces all company/assignment permissions.
 
 ## Employee home demo
 
-The page uses your design kit's logo, light theme and teal/cyan/amber palette.
+Choose **Explore the demo** on login. The page uses your design kit's logo,
+light theme and teal/cyan/amber palette.
 It shows a sample employee, fictional company and two pending colleague
 surveys. The sidebar links jump to the overview, check-ins and participation.
 
@@ -57,21 +100,20 @@ surveys. The sidebar links jump to the overview, check-ins and participation.
 - Completing/skipping the two assignments reveals an all-caught-up state.
   Reset demo restores the original examples.
 
-The page is explicitly labeled Demo data. **No API requests are made.**
+The demo page is explicitly labeled Demo data. **No API requests are made in demo mode.**
 Only assignment statuses and replacement history persist in this browser's
 local storage under `flowchemia.employee-home.demo.v1`. Actual selected ratings
 are not stored or sent anywhere; closing a survey discards them. Reset clears
 the sample progress. If browser storage is unavailable, progress is kept only
 until reload, with an on-screen notice.
 
-`src/demo.ts` is an isolated sample-data/state module. Its fixed sample
-questions are not the production allocator. When wiring authentication and
-the real API, use the exact questions returned by assignment detail and the
-server's authoritative outcomes, permissions and participation credit.
+`src/demo.ts` and `src/DemoWorkspace.tsx` are isolated sample-data/state modules.
+Their fixed sample questions are not the production allocator and are never
+used in real mode.
 
 ## API development
 
-The placeholder works without the backend. When developing API-backed screens,
+The demo works without the backend. For real login and surveys,
 start the sibling FlowChemia-API repository separately, following its README.
 During `npm run dev`, requests to `/api/...` proxy to the backend on port 3001,
 with `/api` removed. For example, `/api/health` forwards to `/health`.
@@ -102,7 +144,7 @@ Repository: https://github.com/MuradEm/FlowChemia
 Commit source files, the lockfile and design references. Do not commit
 `node_modules/`, `dist/` or local environment files. After a clone or pull,
 use `npm ci` to install exactly the locked dependencies. GitHub Actions runs
-type checking and the build for pushes and pull requests.
+tests, type checking and the build for pushes and pull requests.
 
 ## Codex cloud workspace
 
