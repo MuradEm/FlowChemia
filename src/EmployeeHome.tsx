@@ -23,6 +23,7 @@ type Props = {
   onRefresh?: () => void;
   onSwitchCompany?: () => void;
   onCompanySetup?: () => void;
+  onSurveySettings?: () => void;
   onExit: () => void;
 };
 
@@ -91,6 +92,7 @@ export default function EmployeeHome(props: Props) {
     onRefresh,
     onSwitchCompany,
     onCompanySetup,
+    onSurveySettings,
     onExit,
   } = props;
   const demo = mode === "demo";
@@ -146,6 +148,12 @@ export default function EmployeeHome(props: Props) {
             <button className="nav-item" onClick={onCompanySetup}>
               <Icon name="building" />
               <span>Company setup</span>
+            </button>
+          )}
+          {onSurveySettings && (
+            <button className="nav-item" onClick={onSurveySettings}>
+              <Icon name="survey" />
+              <span>Survey settings</span>
             </button>
           )}
         </nav>

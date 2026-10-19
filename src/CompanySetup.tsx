@@ -41,6 +41,7 @@ type Props = {
   onExit: () => void;
   onBack: () => void;
   onSwitchCompany: () => void;
+  onSurveySettings: () => void;
 };
 
 export default function CompanySetup({
@@ -50,6 +51,7 @@ export default function CompanySetup({
   onExit,
   onBack,
   onSwitchCompany,
+  onSurveySettings,
 }: Props) {
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [teams, setTeams] = useState<TeamSummary[]>([]);
@@ -195,6 +197,9 @@ export default function CompanySetup({
         <nav aria-label="Workspace navigation">
           <button className="text-button" onClick={onBack}>
             My workspace
+          </button>
+          <button className="text-button" onClick={onSurveySettings}>
+            Survey settings
           </button>
           <button className="text-button" onClick={onSwitchCompany}>
             Switch company
@@ -680,8 +685,8 @@ export default function CompanySetup({
             </div>
           )}
           <p className="setup-note">
-            Creating a team does not issue check-ins. Survey scheduling will be
-            configured separately.
+            Creating a team does not issue check-ins. Open Survey settings to
+            configure the schedule or generate the current batch.
           </p>
         </section>
         <section className="setup-panel" aria-labelledby="directory-heading">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import SurveySettings from "./SurveySettings";
 import CompanySetup from "./CompanySetup";
 import EmployeeHome from "./EmployeeHome";
 import SurveyDialog from "./SurveyDialog";
@@ -44,7 +45,7 @@ export default function LiveWorkspace({
   onExit,
   onSwitchCompany,
 }: Props) {
-  const [setup, setSetup] = useState(false);
+  const [view, setView] = useState<"home" | "setup" | "settings">("home");
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [participation, setParticipation] = useState<Participation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,7 +209,22 @@ export default function LiveWorkspace({
     void refresh();
   }
 
-  if (setup && membership.role !== "EMPLOYEE")
+  if (view === "settings" && membership.role !== "EMPLOYEE")
+    return (
+      <SurveySettings
+        session={session}
+        membership={membership}
+        onExpired={onExpired}
+        onExit={onExit}
+        onBack={() => {
+          setView("home");
+          void refresh();
+        }}
+        onSwitchCompany={onSwitchCompany}
+        onCompanySetup={() => setView("setup")}
+      />
+    );
+  if (view === "setup" && membership.role !== "EMPLOYEE")
     return (
       <CompanySetup
         session={session}
@@ -216,10 +232,11 @@ export default function LiveWorkspace({
         onExpired={onExpired}
         onExit={onExit}
         onBack={() => {
-          setSetup(false);
+          setView("home");
           void refresh();
         }}
         onSwitchCompany={onSwitchCompany}
+        onSurveySettings={() => setView("settings")}
       />
     );
 
@@ -246,8 +263,11 @@ export default function LiveWorkspace({
           setActive(null);
           void refresh();
         }}
+        onSurveySettings={
+          membership.role !== "EMPLOYEE" ? () => setView("settings") : undefined
+        }
         onCompanySetup={
-          membership.role !== "EMPLOYEE" ? () => setSetup(true) : undefined
+          membership.role !== "EMPLOYEE" ? () => setView("setup") : undefined
         }
         onExit={onExit}
         onSwitchCompany={onSwitchCompany}

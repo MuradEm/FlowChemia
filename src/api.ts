@@ -64,10 +64,11 @@ export function errorMessage(error: unknown): string {
 }
 
 type Options = {
-  method?: "GET" | "POST" | "DELETE";
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
   token?: string;
   body?: unknown;
   signal?: AbortSignal;
+  timeoutMs?: number;
 };
 export async function apiRequest<T>(
   path: string,
@@ -92,8 +93,11 @@ export async function apiRequest<T>(
       cache: "no-store",
       redirect: "error",
       signal: options.signal
-        ? AbortSignal.any([options.signal, AbortSignal.timeout(15000)])
-        : AbortSignal.timeout(15000),
+        ? AbortSignal.any([
+            options.signal,
+            AbortSignal.timeout(options.timeoutMs ?? 15000),
+          ])
+        : AbortSignal.timeout(options.timeoutMs ?? 15000),
     });
   } catch (error) {
     if (options.signal?.aborted) throw error;
@@ -331,4 +335,136 @@ export const acceptInvitation = (
     token,
     method: "POST",
     body: { token: invitationToken.trim(), ...account },
+  });
+
+export type SurveyPolicy = {
+  id: string;
+  frequency: "WEEKLY" | "FORTNIGHTLY" | "MONTHLY";
+  colleaguesPerPeriod: number;
+  timeZone: string;
+  weekday: number;
+  monthDay: number;
+  generationHour: number;
+  generationMinute: number;
+  automaticEnabled: boolean;
+  effectiveFrom: string;
+  automaticStartsAt: string | null;
+  questionSelection: "MANUAL" | "ADAPTIVE";
+  questionVersionIds: string[];
+};
+export type GenerationReceipt = {
+  id: string;
+  scheduledFor: string;
+  createdAt: string;
+  createdAssignments: number;
+  blockedEmployees: number;
+  employeesWithLimitedPeers: number;
+};
+export type SurveySchedule = {
+  policy: SurveyPolicy;
+  opensAt: string;
+  closesAt: string;
+  pending: SurveyPolicy | null;
+  nextGenerationAt: string | null;
+  lastGeneration: GenerationReceipt | null;
+  requiresQuestionSetUpdate: boolean;
+};
+export type SurveyQuestion = {
+  id: string;
+  questionKey: string;
+  text: string;
+  kind: string;
+  dimension: string;
+  active: boolean;
+  approvalStatus: string;
+  QuestionSkill_question: { skillId: string; weight: string | number }[];
+};
+export type SurveySkill = { id: string; active: boolean };
+export type ScheduleChange = {
+  frequency: SurveyPolicy["frequency"];
+  colleaguesPerPeriod: number;
+  timeZone: string;
+  weekday: number;
+  monthDay: number;
+  generationTime: string;
+  automaticEnabled: boolean;
+  questionSelection: SurveyPolicy["questionSelection"];
+  questionVersionIds: string[];
+};
+export type GenerationResult = {
+  generationId: string;
+  periodStart: string;
+  periodEnd: string;
+  createdAssignments: number;
+  blockedEmployees: number;
+  employeesWithLimitedPeers: number;
+  alreadyProcessed: boolean;
+};
+export type StandardLibrary = {
+  version: string;
+  context: string;
+  questions: {
+    templateKey: string;
+    text: string;
+    dimension: string;
+    skillName?: string;
+  }[];
+};
+export const getSurveySchedule = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<SurveySchedule>(`${orgPath(org)}/feedback-policy`, {
+    token,
+    signal,
+  });
+export const saveSurveySchedule = (
+  token: string,
+  org: string,
+  body: ScheduleChange,
+) =>
+  apiRequest<SurveyPolicy>(`${orgPath(org)}/feedback-policy`, {
+    token,
+    method: "PATCH",
+    body,
+  });
+export const getSurveyQuestions = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<SurveyQuestion[]>(`${orgPath(org)}/questions`, { token, signal });
+export const getSurveySkills = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) => apiRequest<SurveySkill[]>(`${orgPath(org)}/skills`, { token, signal });
+export const getStandardLibrary = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<StandardLibrary>(`${orgPath(org)}/questions/standard-library`, {
+    token,
+    signal,
+  });
+export const importStandardQuestions = (token: string, org: string) =>
+  apiRequest<{ createdQuestions: number }>(
+    `${orgPath(org)}/questions/import-standard`,
+    { token, method: "POST", body: {}, timeoutMs: 30000 },
+  );
+export const generateCompanySurveys = (token: string, org: string) =>
+  apiRequest<GenerationResult>(`${orgPath(org)}/surveys/generate-periodic`, {
+    token,
+    method: "POST",
+    body: {},
+    timeoutMs: 45000,
+  });
+
+export const pauseAutomaticSurveys = (token: string, org: string) =>
+  apiRequest<SurveyPolicy>(`${orgPath(org)}/feedback-policy`, {
+    token,
+    method: "PATCH",
+    body: { automaticEnabled: false },
   });

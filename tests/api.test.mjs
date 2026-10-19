@@ -247,3 +247,18 @@ test("roster and role removals target company membership, preserve DELETE semant
     assert.equal(options.headers.Authorization, "Bearer session");
   }
 });
+
+test("immediate pause sends only the pause flag, preserving the API's ability to pause an unusable library", async () => {
+  await withFetch(
+    async (path, options) => {
+      assert.equal(path, "/api/organizations/company/feedback-policy");
+      assert.equal(options.method, "PATCH");
+      assert.deepEqual(JSON.parse(options.body), { automaticEnabled: false });
+      return json({ automaticEnabled: false });
+    },
+    async () => {
+      const { pauseAutomaticSurveys } = await import("../src/api.ts");
+      await pauseAutomaticSurveys("token", "company");
+    },
+  );
+});

@@ -2155,3 +2155,94 @@ button.nav-item:hover {
   flex-basis: 100%;
   margin: 0;
 }
+.schedule-summary {
+  display: grid;
+  grid-template-columns: 1fr minmax(240px, 0.65fr);
+  gap: 24px;
+}
+.schedule-summary > div:only-child {
+  grid-column: 1 / -1;
+}
+.pending-schedule {
+  background: #edf7f3;
+  border-radius: 12px;
+  padding: 20px;
+  align-self: start;
+}
+.schedule-checkbox {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+}
+.setup-form .schedule-checkbox input {
+  width: 20px;
+  min-height: 20px;
+  height: 20px;
+  accent-color: #0f4c5c;
+  flex-shrink: 0;
+}
+.setup-form .timezone-button {
+  margin: 0;
+}
+.survey-rules {
+  padding-left: 20px;
+  color: #526873;
+  line-height: 1.8;
+}
+.survey-rules li {
+  margin: 12px 0;
+}
+.manual-generation-button {
+  margin-top: 20px;
+  max-width: 100%;
+}
+.generation-results {
+  margin: 22px 0 0;
+}
+.generation-results > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #e5ecee;
+  padding: 12px 0;
+}
+.generation-results dt {
+  color: #526873;
+}
+.generation-results dd {
+  margin: 0;
+  color: #183a43;
+  font-weight: 600;
+  text-align: right;
+}
+.standard-library {
+  margin: 20px 0;
+}
+.standard-library summary {
+  cursor: pointer;
+  color: #0f4c5c;
+  font-weight: 600;
+  padding: 10px 0;
+}
+.standard-library ul {
+  list-style: none;
+  padding: 0;
+}
+.standard-library li {
+  padding: 15px 0;
+  border-bottom: 1px solid #e5ecee;
+}
+.standard-library li span {
+  font-size: 12px;
+  color: #385d58;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .schedule-summary {
+    grid-template-columns: 1fr;
+  }
+}
+.pause-schedule {
+  margin: 0 0 24px;
+}

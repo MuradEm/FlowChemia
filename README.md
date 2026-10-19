@@ -1,7 +1,7 @@
 # FlowChemia frontend
 
 React + TypeScript + Vite frontend with login, company selection, employee
-home, company setup, server-issued colleague surveys and participation history. Design and
+home, company setup, survey scheduling, server-issued colleague surveys and participation history. Design and
 application behavior are developed together with the product owner. A separate,
 explicit demo remains available for design review without the backend.
 
@@ -122,13 +122,64 @@ storage or URL parameters. Lost mutation responses are not automatically retried
 refresh and inspect the server state first. For an uncertain invitation acceptance,
 try signing in and check memberships, or ask the administrator to check the
 colleague list. Creating a team does not generate check-ins or enable a schedule;
-survey administration will be a separate step.
+open Survey settings to configure or generate a batch.
 
 Browser verification for this feature used a disposable PostgreSQL database and
 the real API/Vite proxy: new and existing invitation acceptance, HR restrictions,
 overlapping teams, leadership removal and history preservation, role revocation,
 company switching, uncertain-response recovery and sign-out. Company setup passed
 axe WCAG AA checks and overflow checks at widths 320, 390, 768, 1024 and 1440.
+
+## Survey settings and company-wide generation
+
+Owners and HR administrators can open **Survey settings** from the workspace
+sidebar or the Company setup header. This feature uses existing API endpoints;
+no backend update or database migration is required.
+
+1. An HR administrator opens the standard question library, reviews the wording,
+   and chooses **Approve and add standard questions**. This adds missing standard
+   questions/skills with recorded HR approval. Only HR can approve the import;
+   the owner cannot bypass this rule. Existing standard questions are preserved.
+2. Choose weekly, every two weeks, or monthly; one or two colleague surveys per
+   employee; the company timezone; weekday (or monthly day); and local generation
+   time. Month days missing in a shorter month use its last day. Adaptive
+   selection uses approved active questions and considers existing answers and
+   pending assignments. Existing configured fixed question sets are preserved
+   unless the administrator explicitly switches to adaptive selection.
+3. Save the settings. Automatic generation is optional and starts at the next
+   configured boundary. The backend must remain running; its scheduler checks
+   due companies every minute. The screen shows the next automatic generation.
+4. Choose **Generate surveys for everyone** for the current period, even while
+   automation is paused. This is one company-wide batch per period, shared with
+   automatic generation. Active participants in active teams are eligible; HR
+   is excluded. Overlapping teams do not increase the per-employee limit or
+   duplicate a colleague. Employees with too few eligible peers get fewer
+   surveys. Anyone with an unanswered survey is blocked across teams.
+5. Inspect **Last generation** for surveys created, employees blocked, limited
+   peer counts, and the processing time. A processed period disables the manual
+   button; repeated or concurrent API requests cannot create another batch.
+   Even if employees finish, or new employees join, the next batch waits until
+   the next period. An employee who still had an old survey open at the period
+   boundary also waits until the next period after finishing it.
+
+Periodic surveys do not expire. The displayed period end controls the next
+batch, not the deadline of an existing survey. Five-question surveys keep the
+agreed two-minute target and allow Not observed without written answers.
+
+Edits after a batch has been issued normally become pending settings for the
+next period; the screen distinguishes current and pending policies. A dedicated
+**Pause automatic generation now** action sends only the pause flag, so it can
+pause even if the question library has become unusable. Pausing cancels pending
+changes and leaves outstanding surveys available. Save or refresh to discard
+unsaved edits before manual generation. Failed/uncertain mutation responses
+require refresh and inspection, with no automatic retry.
+
+Verification includes API scheduling/adaptive-survey tests, frontend tests for
+question readiness and safe pause requests, and real browser/API flows using a
+disposable database. Browser checks cover HR import, scheduling, manual generation
+across overlapping teams, unanswered-survey blocking, period replay, pending edits,
+pause with an invalid library, company switching, employee permissions, uncertain
+responses, accessibility and mobile overflow.
 
 ## Employee home demo
 
