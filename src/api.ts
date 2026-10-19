@@ -468,3 +468,52 @@ export const pauseAutomaticSurveys = (token: string, org: string) =>
     method: "PATCH",
     body: { automaticEnabled: false },
   });
+
+export type InsightIndicator = {
+  state: "UNKNOWN" | "EARLY" | "OLDER" | "POSITIVE" | "MIXED" | "DIFFICULT";
+  label: string;
+  reports: number;
+  reviewers: number;
+  firstAt: string | null;
+  lastAt: string | null;
+};
+export type EmployeeInsight = {
+  membershipId: string;
+  displayName: string;
+  role: string;
+  isYou: boolean;
+  skills: { id: string; name: string; indicator: InsightIndicator }[] | null;
+};
+export type RelationshipInsight = {
+  firstMembershipId: string;
+  secondMembershipId: string;
+  visibility: "BOTH_DIRECTIONS" | "OWN_EXPERIENCE";
+  firstToSecond: {
+    enjoyment: InsightIndicator;
+    effectiveness: InsightIndicator;
+  } | null;
+  secondToFirst: {
+    enjoyment: InsightIndicator;
+    effectiveness: InsightIndicator;
+  } | null;
+  combined: InsightIndicator | null;
+};
+export type TeamInsights = {
+  team: { id: string; name: string };
+  mode: "TEAM" | "PERSONAL" | "ROSTER";
+  modelVersion: string;
+  computedAt: string;
+  employees: EmployeeInsight[];
+  relationships: RelationshipInsight[];
+};
+export const getTeamInsights = (
+  token: string,
+  org: string,
+  team: string,
+  focus?: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<TeamInsights>(
+    `${teamPath(org, team)}/insights${focus ? `?focus=${encodeURIComponent(focus)}` : ""}`,
+    { token, signal, timeoutMs: 45000 },
+  );

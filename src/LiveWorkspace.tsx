@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import TeamView from "./TeamView";
 import SurveySettings from "./SurveySettings";
 import CompanySetup from "./CompanySetup";
 import EmployeeHome from "./EmployeeHome";
@@ -7,6 +8,7 @@ import {
   ApiError,
   errorMessage,
   getAssignment,
+  getTeams,
   getOpenAssignments,
   getParticipation,
   replaceAssignment,
@@ -45,7 +47,10 @@ export default function LiveWorkspace({
   onExit,
   onSwitchCompany,
 }: Props) {
-  const [view, setView] = useState<"home" | "setup" | "settings">("home");
+  const [view, setView] = useState<"home" | "setup" | "settings" | "teams">(
+    "home",
+  );
+  const [hasTeams, setHasTeams] = useState(false);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [participation, setParticipation] = useState<Participation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,12 +75,18 @@ export default function LiveWorkspace({
     setError("");
     setAssignments([]);
     setParticipation([]);
+    setHasTeams(false);
     try {
-      const [open, history] = await Promise.all([
+      const [open, history, teams] = await Promise.all([
         getOpenAssignments(session.token, org, controller.signal),
         getParticipation(session.token, org, controller.signal),
+        getTeams(session.token, org, controller.signal),
       ]);
-      if (!Array.isArray(open) || !Array.isArray(history))
+      if (
+        !Array.isArray(open) ||
+        !Array.isArray(history) ||
+        !Array.isArray(teams)
+      )
         throw new ApiError(
           502,
           "The API returned an unexpected workspace response.",
@@ -87,6 +98,7 @@ export default function LiveWorkspace({
       )
         return;
       open.forEach((a) => labels.current.set(a.id, a.subject.displayName));
+      setHasTeams(teams.length > 0);
       setAssignments(open);
       setParticipation(history);
     } catch (failure) {
@@ -209,6 +221,23 @@ export default function LiveWorkspace({
     void refresh();
   }
 
+  if (view === "teams")
+    return (
+      <TeamView
+        session={session}
+        membership={membership}
+        onExpired={onExpired}
+        onExit={onExit}
+        onSwitchCompany={onSwitchCompany}
+        onBack={() => {
+          setView("home");
+          void refresh();
+        }}
+        onCompanySetup={
+          membership.role !== "EMPLOYEE" ? () => setView("setup") : undefined
+        }
+      />
+    );
   if (view === "settings" && membership.role !== "EMPLOYEE")
     return (
       <SurveySettings
@@ -244,6 +273,7 @@ export default function LiveWorkspace({
     <>
       <EmployeeHome
         mode="live"
+        onTeams={hasTeams ? () => setView("teams") : undefined}
         displayName={displayName}
         companyName={membership.organization.name}
         roleLabel={

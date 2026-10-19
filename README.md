@@ -254,3 +254,34 @@ do not create a worktree unless requested. In this cloud environment, use
 `npm ci --cache /workspace/.npm-cache` because the home-directory npm cache
 is not writable. Start `npm run dev` in a persistent terminal session when
 needed; running processes must be restarted after the environment is restored.
+
+## Team overview and employee cards
+
+Open **My teams** from the workspace sidebar. This action appears when the API
+returns teams available to the signed-in user. The overview renders current
+employee cards **without connection lines**. Select an employee to show their
+expanded skills and only their connections to teammates; Team overview clears
+selection. Connections resize with the cards and viewport. Touch and keyboard
+selection work without hover-only information.
+
+The API calculates and stores skill and directional relationship estimates;
+the frontend receives qualitative labels, icons and evidence context only.
+Unknown, early and older feedback remain neutral. Reported enjoyment and
+collaboration effectiveness remain separate, and the combined connection describes
+reported effectiveness only when both directions have observations. Cards don't
+invent job titles, photos, rankings or overall employee scores.
+
+Independent HR sees team insights. Assigned managers and participating leaders
+see team insights but only their own reported experience in pairs involving
+themselves. Ordinary participants see their own skills and experiences; other
+people's skills and pair feedback stay outside the response. Company owners
+without a team role see roster cards without employee-insight actions. The API
+enforces these rules before sending data. No real company information is saved
+in browser storage or replaced with demo content when a request fails.
+
+Update the backend first: this feature requires migration 10, Prisma generation
+and a rebuild. Follow the API's [update instructions](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/local-frontend.md#update-for-employee-cards-and-team-insights).
+Existing raw answers are retained; missing summaries are filled on first access,
+and future completed surveys recalculate/save affected summaries from the full
+company history. The chosen model, early-feedback thresholds and cache behaviour
+are documented in the API's [insight contract](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/insights.md).
