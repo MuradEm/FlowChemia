@@ -1,0 +1,23 @@
+/* FlowChemia design tokens — brand colors are chosen palette, not an eyedropper sample. */
+:root {
+  --fc-primary: #0F4C5C;
+  --fc-secondary: #4FBDBA;
+  --fc-accent: #F6AE2D;
+  --fc-text: #1F2933;
+  --fc-background: #F8FAFC;
+  --fc-surface: #FFFFFF;
+  --fc-border: #E5E7EB;
+  --fc-positive: #16A34A;
+  --fc-info: #0284C7;
+  --fc-neutral: #94A3B8;
+  --fc-warning: #F59E0B;
+  --fc-risk: #EF4444;
+  --fc-font: Inter, Roboto, system-ui, sans-serif;
+  --fc-radius-card: 16px;
+  --fc-radius-control: 10px;
+  --fc-radius-pill: 999px;
+  --fc-shadow-card: 0 8px 24px rgba(15, 76, 92, 0.07);
+}
+body { background: var(--fc-background); color: var(--fc-text); font-family: var(--fc-font); }
+.fc-card { background: var(--fc-surface); border: 1px solid var(--fc-border); border-radius: var(--fc-radius-card); box-shadow: var(--fc-shadow-card); }
+.fc-primary-button { background: var(--fc-primary); color: white; border: 0; border-radius: var(--fc-radius-control); }

@@ -1,0 +1,18 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+main {
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 32px 24px;
+}
+
+h1 {
+  color: var(--fc-primary);
+}

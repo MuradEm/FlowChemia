@@ -1,0 +1,38 @@
+{
+  "name": "FlowChemia",
+  "tagline": "The chemistry of how teams work together",
+  "fontFamily": "Inter, Roboto, sans-serif",
+  "colors": {
+    "brand": {
+      "primary": "#0F4C5C",
+      "secondary": "#4FBDBA",
+      "accent": "#F6AE2D"
+    },
+    "neutral": {
+      "charcoal": "#1F2933",
+      "background": "#F8FAFC",
+      "white": "#FFFFFF",
+      "border": "#E5E7EB"
+    },
+    "semantic": {
+      "positive": "#16A34A",
+      "informational": "#0284C7",
+      "neutral": "#94A3B8",
+      "caution": "#F59E0B",
+      "risk": "#EF4444"
+    }
+  },
+  "radius": {
+    "card": "16px",
+    "control": "10px",
+    "pill": "999px"
+  },
+  "spacing": {
+    "base": "8px",
+    "section": "24px",
+    "page": "32px"
+  },
+  "shadows": {
+    "card": "0 8px 24px rgba(15,76,92,.07)"
+  }
+}
