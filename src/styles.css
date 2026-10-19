@@ -1841,3 +1841,317 @@ dialog::backdrop {
     max-width: 90px;
   }
 }
+
+/* Company administration uses the same palette and controls as the workspace. */
+select {
+  font: inherit;
+}
+button.nav-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+button.nav-item:hover {
+  background: #e8f3f0;
+}
+.setup-page {
+  min-height: 100vh;
+}
+.setup-header {
+  background: white;
+  border-bottom: 1px solid #e2e9ec;
+  padding: 20px max(24px, calc((100vw - 1200px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.setup-brand {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+.setup-header nav,
+.setup-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.setup-content {
+  max-width: 1250px;
+  margin: auto;
+  padding: 38px 25px 60px;
+}
+.setup-content h1 {
+  font-size: 34px;
+}
+.setup-content h1 span {
+  color: #287c79;
+}
+.setup-content .notice,
+.setup-content .auth-error {
+  margin: 0 0 24px;
+}
+.setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.setup-panel {
+  background: #fff;
+  border: 1px solid #e0e8eb;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  min-width: 0;
+}
+.setup-panel > .round-icon {
+  margin-bottom: 14px;
+}
+.setup-panel h2 {
+  font-size: 21px;
+  margin-bottom: 8px;
+}
+.setup-panel h3 {
+  font-size: 19px;
+  overflow-wrap: anywhere;
+}
+.setup-panel h4 {
+  font-size: 16px;
+  margin: 26px 0 10px;
+}
+.setup-panel p {
+  color: #526873;
+  line-height: 1.7;
+}
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 20px;
+}
+.setup-form label,
+.setup-inline-form label,
+.invitation-delivery label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #304d58;
+}
+.setup-form input,
+.setup-form select,
+.setup-inline-form select,
+.invitation-delivery input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #becdd2;
+  border-radius: 9px;
+  background: white;
+  color: #263b43;
+  padding: 11px 12px;
+  min-height: 44px;
+}
+.setup-form label:not(:first-child) {
+  margin-top: 8px;
+}
+.setup-form > button {
+  margin-top: 12px;
+  align-self: flex-start;
+}
+.setup-form input:disabled,
+.setup-form select:disabled {
+  background: #f2f5f6;
+}
+.setup-note,
+.setup-panel .setup-note {
+  font-size: 12px;
+  color: #526873;
+  margin-top: 12px;
+}
+.setup-date-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.setup-date-fields label {
+  display: block;
+  margin-bottom: 8px;
+}
+.invitation-delivery {
+  background: #edf7f3;
+  border: 1px solid #b9d8cd;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+  overflow-wrap: anywhere;
+}
+.invitation-delivery p {
+  font-size: 13px;
+  margin: 10px 0;
+}
+.invitation-delivery input {
+  margin: 8px 0 15px;
+  font-family: monospace;
+}
+.invitation-delivery .setup-actions {
+  gap: 14px;
+}
+.team-management {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 30px;
+  margin: 22px 0;
+}
+.team-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: start;
+}
+.team-option {
+  background: #f7f9fa;
+  border: 1px solid #dce6e9;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: left;
+  color: #304d58;
+  min-width: 0;
+}
+.team-option.selected {
+  background: #edf7f3;
+  border-color: #39817b;
+  box-shadow: inset 3px 0 #39817b;
+}
+.team-option strong,
+.team-option span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.team-option span {
+  font-size: 12px;
+  color: #526873;
+  margin-top: 4px;
+}
+.setup-roster {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0;
+}
+.setup-roster li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e5ecee;
+}
+.setup-roster li > div {
+  min-width: 0;
+}
+.setup-roster strong,
+.setup-roster div span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.setup-roster div span {
+  font-size: 12px;
+  color: #526873;
+  margin-top: 3px;
+}
+.member-role {
+  font-size: 12px;
+  color: #385d58;
+  text-align: right;
+}
+.danger-text {
+  color: #98412e;
+}
+.setup-inline-form {
+  margin-top: 18px;
+}
+.setup-inline-form > div {
+  display: flex;
+  gap: 12px;
+  margin-top: 9px;
+}
+.setup-inline-form select {
+  flex: 1;
+}
+.setup-inline-form button {
+  flex-shrink: 0;
+}
+.join-back {
+  margin-top: 24px;
+}
+@media (max-width: 900px) {
+  .setup-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .setup-date-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .team-management {
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+@media (max-width: 600px) {
+  .setup-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 20px;
+    gap: 18px;
+  }
+  .setup-header nav {
+    gap: 18px;
+  }
+  .setup-content {
+    padding: 28px 16px;
+  }
+  .setup-content h1 {
+    font-size: 28px;
+  }
+  .setup-panel {
+    padding: 21px;
+  }
+  .setup-date-fields,
+  .team-management {
+    grid-template-columns: 1fr;
+  }
+  .team-picker {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .team-option {
+    flex: 0 0 165px;
+  }
+  .setup-inline-form > div {
+    flex-wrap: wrap;
+  }
+  .setup-inline-form select {
+    flex-basis: 100%;
+  }
+  .directory li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .member-role {
+    text-align: left;
+  }
+}
+.company-setup-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  margin: 24px 0;
+}
+.company-setup-options form {
+  flex-basis: 100%;
+  margin: 0;
+}

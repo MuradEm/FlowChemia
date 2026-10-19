@@ -180,3 +180,70 @@ test("caller cancellation is preserved so obsolete company requests can be ignor
     },
   );
 });
+
+test("invitation acceptance keeps tokens out of URLs and separates new credentials from existing identity", async () => {
+  const requests = [];
+  await withFetch(
+    async (path, options) => {
+      requests.push({ path, options });
+      return json({
+        membership: { id: "member", orgId: "company", role: "EMPLOYEE" },
+      });
+    },
+    async () => {
+      const { acceptInvitation } = await import("../src/api.ts");
+      await acceptInvitation(" invitation-secret ", {
+        displayName: "Alice",
+        password: "new-password-value",
+      });
+      await acceptInvitation("invitation-secret", undefined, "session-secret");
+    },
+  );
+  assert.equal(requests.length, 2);
+  for (const { path, options } of requests) {
+    assert.equal(path, "/api/invitations/accept");
+    assert.equal(options.method, "POST");
+    assert.equal(options.credentials, "omit");
+  }
+  assert.deepEqual(JSON.parse(requests[0].options.body), {
+    token: "invitation-secret",
+    displayName: "Alice",
+    password: "new-password-value",
+  });
+  assert.equal(requests[0].options.headers.Authorization, undefined);
+  assert.deepEqual(JSON.parse(requests[1].options.body), {
+    token: "invitation-secret",
+  });
+  assert.equal(
+    requests[1].options.headers.Authorization,
+    "Bearer session-secret",
+  );
+});
+
+test("roster and role removals target company membership, preserve DELETE semantics and do not resend personal data", async () => {
+  const requests = [];
+  await withFetch(
+    async (path, options) => {
+      requests.push({ path, options });
+      return json({ ok: true });
+    },
+    async () => {
+      const { removeTeamMember, revokeTeamRole } =
+        await import("../src/api.ts");
+      await removeTeamMember("session", "company", "team", "membership");
+      await revokeTeamRole("session", "company", "team", "membership");
+    },
+  );
+  assert.deepEqual(
+    requests.map((r) => r.path),
+    [
+      "/api/organizations/company/teams/team/members/membership",
+      "/api/organizations/company/teams/team/access/membership",
+    ],
+  );
+  for (const { options } of requests) {
+    assert.equal(options.method, "DELETE");
+    assert.equal(options.body, undefined);
+    assert.equal(options.headers.Authorization, "Bearer session");
+  }
+});

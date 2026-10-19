@@ -1,3 +1,4 @@
+import JoinCompany from "./JoinCompany";
 import { useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
 import { errorMessage, login } from "./api";
@@ -13,6 +14,8 @@ export default function Login({
   onLogin: (session: Session) => void;
   onDemo: () => void;
 }) {
+  const [joining, setJoining] = useState(false);
+  const [joined, setJoined] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,6 +35,16 @@ export default function Login({
       setBusy(false);
     }
   }
+  if (joining)
+    return (
+      <JoinCompany
+        onBack={() => setJoining(false)}
+        onJoined={() => {
+          setJoining(false);
+          setJoined(true);
+        }}
+      />
+    );
   return (
     <div className="auth-page">
       <div className="auth-brand">
@@ -46,6 +59,12 @@ export default function Login({
         <p className="auth-intro">
           Sign in to share your experience and see your check-ins.
         </p>
+        {joined && (
+          <p className="auth-message" role="status">
+            Your account is ready. Sign in with the invited email and your new
+            password.
+          </p>
+        )}
         {message && (
           <p className="auth-message" role="status">
             {message}
@@ -93,6 +112,13 @@ export default function Login({
           Use the account provided by your company. New colleagues join by
           invitation.
         </p>
+        <button
+          className="text-button"
+          disabled={busy}
+          onClick={() => setJoining(true)}
+        >
+          Accept an invitation
+        </button>
         <div className="auth-divider">
           <span>Just looking around?</span>
         </div>

@@ -22,6 +22,7 @@ type Props = {
   onReset?: () => void;
   onRefresh?: () => void;
   onSwitchCompany?: () => void;
+  onCompanySetup?: () => void;
   onExit: () => void;
 };
 
@@ -89,6 +90,7 @@ export default function EmployeeHome(props: Props) {
     onReset,
     onRefresh,
     onSwitchCompany,
+    onCompanySetup,
     onExit,
   } = props;
   const demo = mode === "demo";
@@ -140,6 +142,12 @@ export default function EmployeeHome(props: Props) {
               )}
             </a>
           ))}
+          {onCompanySetup && (
+            <button className="nav-item" onClick={onCompanySetup}>
+              <Icon name="building" />
+              <span>Company setup</span>
+            </button>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-note">
@@ -463,8 +471,7 @@ export default function EmployeeHome(props: Props) {
               <div className="guidance-bottom">
                 <Icon name="shield" />
                 <span>
-                  No written answers.{" "}
-                  <br />
+                  No written answers. <br />
                   {demo
                     ? "Just five thoughtful choices."
                     : "Just a few thoughtful choices."}

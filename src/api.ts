@@ -64,7 +64,7 @@ export function errorMessage(error: unknown): string {
 }
 
 type Options = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "DELETE";
   token?: string;
   body?: unknown;
   signal?: AbortSignal;
@@ -107,14 +107,16 @@ export async function apiRequest<T>(
       400:
         path === "/auth/login"
           ? "Enter a valid email and password."
-          : "The request could not be accepted. Check your answers and try again.",
+          : "The request could not be accepted. Check the details and try again.",
       401:
         path === "/auth/login"
           ? "The email or password is incorrect."
           : "Your session has expired. Please sign in again.",
       403: "You don’t have access to this action.",
-      404: "This company or check-in is no longer available to you.",
-      409: "This check-in has changed or is already closed. Refresh your check-ins before continuing.",
+      404: "This item is no longer available to you.",
+      409: path.includes("/assignments/")
+        ? "This check-in has changed or is already closed. Refresh your check-ins before continuing."
+        : "This record already exists or has changed. Refresh before continuing.",
       429: "Too many attempts. Please wait a minute and try again.",
     };
     throw new ApiError(
@@ -207,3 +209,126 @@ export const replaceAssignment = (token: string, org: string, id: string) =>
   }>(`${assignmentPath(org, id)}/replace`, { token, method: "POST", body: {} });
 export const logout = (token: string) =>
   apiRequest<{ ok: boolean }>("/auth/logout", { token, method: "POST" });
+
+export type CompanyMember = {
+  id: string;
+  role: Membership["role"];
+  active: boolean;
+  user: { id: string; displayName: string; email: string };
+};
+export type TeamSummary = {
+  id: string;
+  name: string;
+  startsAt: string;
+  endsAt: string | null;
+};
+export type TeamRole = "MANAGER" | "TEAM_LEADER";
+export type TeamDetail = TeamSummary & {
+  members: {
+    id: string;
+    membershipId: string;
+    displayName: string;
+    joinedAt: string;
+  }[];
+  access: { membershipId: string; role: TeamRole }[];
+};
+export type InvitationDelivery = {
+  invitation: {
+    id: string;
+    email: string;
+    role: "EMPLOYEE" | "HR_ADMIN";
+    expiresAt: string;
+  };
+  token: string;
+};
+const teamPath = (org: string, team: string) =>
+  `${orgPath(org)}/teams/${encodeURIComponent(team)}`;
+export const getCompanyMembers = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) => apiRequest<CompanyMember[]>(`${orgPath(org)}/members`, { token, signal });
+export const getTeams = (token: string, org: string, signal?: AbortSignal) =>
+  apiRequest<TeamSummary[]>(`${orgPath(org)}/teams`, { token, signal });
+export const getTeam = (
+  token: string,
+  org: string,
+  team: string,
+  signal?: AbortSignal,
+) => apiRequest<TeamDetail>(teamPath(org, team), { token, signal });
+export const inviteColleague = (
+  token: string,
+  org: string,
+  email: string,
+  role: "EMPLOYEE" | "HR_ADMIN",
+) =>
+  apiRequest<InvitationDelivery>(`${orgPath(org)}/invitations`, {
+    token,
+    method: "POST",
+    body: { email: email.trim().toLowerCase(), role },
+  });
+export const createTeam = (
+  token: string,
+  org: string,
+  details: { name: string; startsAt?: string; endsAt?: string },
+) =>
+  apiRequest<TeamSummary>(`${orgPath(org)}/teams`, {
+    token,
+    method: "POST",
+    body: details,
+  });
+export const addTeamMember = (
+  token: string,
+  org: string,
+  team: string,
+  membershipId: string,
+) =>
+  apiRequest(teamPath(org, team) + "/members", {
+    token,
+    method: "POST",
+    body: { membershipId },
+  });
+export const removeTeamMember = (
+  token: string,
+  org: string,
+  team: string,
+  membershipId: string,
+) =>
+  apiRequest(
+    teamPath(org, team) + `/members/${encodeURIComponent(membershipId)}`,
+    { token, method: "DELETE" },
+  );
+export const grantTeamRole = (
+  token: string,
+  org: string,
+  team: string,
+  membershipId: string,
+  role: TeamRole,
+) =>
+  apiRequest(teamPath(org, team) + "/access", {
+    token,
+    method: "POST",
+    body: { membershipId, role },
+  });
+export const revokeTeamRole = (
+  token: string,
+  org: string,
+  team: string,
+  membershipId: string,
+) =>
+  apiRequest(
+    teamPath(org, team) + `/access/${encodeURIComponent(membershipId)}`,
+    { token, method: "DELETE" },
+  );
+export const acceptInvitation = (
+  invitationToken: string,
+  account?: { displayName: string; password: string },
+  token?: string,
+) =>
+  apiRequest<{
+    membership: { id: string; orgId: string; role: Membership["role"] };
+  }>("/invitations/accept", {
+    token,
+    method: "POST",
+    body: { token: invitationToken.trim(), ...account },
+  });

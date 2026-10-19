@@ -1,7 +1,7 @@
 # FlowChemia frontend
 
 React + TypeScript + Vite frontend with login, company selection, employee
-home, server-issued colleague surveys and participation history. Design and
+home, company setup, server-issued colleague surveys and participation history. Design and
 application behavior are developed together with the product owner. A separate,
 explicit demo remains available for design review without the backend.
 
@@ -33,7 +33,7 @@ npm run preview
 `build` checks TypeScript and writes production assets to `dist/`. `preview`
 serves that build on port 4173. It is a local build check, not a deployment.
 Both servers bind to loopback and fail if their port is already occupied.
-`npm test` runs eleven API-client and demo-state tests covering authenticated
+`npm test` runs API-client and demo-state tests covering authenticated
 requests, exact question IDs/null answers, failures, cancellation, no automatic
 mutation retry, progress restoration and replacement. GitHub Actions runs these
 tests and the production build. Real browser flows were also checked against a
@@ -46,7 +46,7 @@ The initial screen is login. Start the sibling
 database before signing in. Follow its
 [Windows/local setup guide](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/local-frontend.md)
 to provision the first account and company on a fresh database. There is no
-default password, public signup, or account creation in this frontend.
+default password or public signup. New accounts require a company invitation.
 
 - Sign in with your company account. One active company opens automatically;
   multiple companies show a selector. No membership shows an invitation-required
@@ -54,6 +54,7 @@ default password, public signup, or account creation in this frontend.
   screen before loading another.
 - The home page reads your own open assignments and latest participation entries.
   It does not fetch coworker responses, scores, company member lists or reports.
+  Owners and HR administrators can open Company setup separately.
   Participation counts describe recent credit entries (the API returns up to
   200), while open check-ins reflect the current actionable list.
 - Opening a survey fetches its exact assigned question IDs, wording, order,
@@ -79,6 +80,55 @@ default password, public signup, or account creation in this frontend.
 profile/company selection, `LiveWorkspace.tsx` handles current server state,
 `EmployeeHome.tsx` renders the shared view, and `SurveyDialog.tsx` renders the
 assigned survey. The API enforces all company/assignment permissions.
+
+## Company setup and invitations
+
+Owners and HR administrators see **Company setup** in the workspace sidebar.
+This screen uses the existing API; no database migration is required.
+
+1. Choose **Invite a colleague**, enter their work email and select Employee.
+   Only an owner can select HR administrator. Create the invitation and copy
+   its token before leaving the screen. **No email is sent**: share the token
+   privately yourself. Tokens expire after 48 hours, are single use, and cannot
+   be retrieved after leaving the screen. There is no invitation list/revoke
+   screen yet.
+2. New users choose **Accept an invitation** on the sign-in screen and enter
+   their token, name, and a password of 12–128 characters. Then they sign in with
+   the exact email invited. Existing users sign in first, choose **Switch company
+   → Join a company**, and accept with their existing identity; this does not
+   change their password. The backend requires the invited account's email.
+3. Refresh company setup after someone joins. Create a team such as PLC
+   Programmers or Robot Programmers. Dates are optional and entered in the
+   browser's local time; a blank start means now and a blank end means ongoing.
+4. Select the team and add accepted colleagues as participants. A colleague can
+   participate in multiple teams. HR administrators cannot participate or hold
+   team responsibilities. Ended teams cannot accept new participants.
+5. Assign a manager or team leader. A leader must already participate; a manager
+   may manage without participating. Each colleague has one responsibility per
+   team, so a new assignment replaces their previous responsibility there.
+   Removing a participant preserves history and removes a team leader role;
+   a separate manager role stays until explicitly revoked. Removal/revocation
+   asks for confirmation.
+
+The company selector also offers **Create a company** for signed-in users,
+including an initial account without a company. The creator becomes its owner.
+Company setup currently exposes company-wide administration to owners/HR;
+the manager's own team management screen will be added separately. The API still
+checks every request's permissions. Lists currently have an API limit of 200
+colleagues/teams, with a notice when that limit is reached.
+
+Invitation tokens, credentials, and company data remain in memory, never browser
+storage or URL parameters. Lost mutation responses are not automatically retried:
+refresh and inspect the server state first. For an uncertain invitation acceptance,
+try signing in and check memberships, or ask the administrator to check the
+colleague list. Creating a team does not generate check-ins or enable a schedule;
+survey administration will be a separate step.
+
+Browser verification for this feature used a disposable PostgreSQL database and
+the real API/Vite proxy: new and existing invitation acceptance, HR restrictions,
+overlapping teams, leadership removal and history preservation, role revocation,
+company switching, uncertain-response recovery and sign-out. Company setup passed
+axe WCAG AA checks and overflow checks at widths 320, 390, 768, 1024 and 1440.
 
 ## Employee home demo
 

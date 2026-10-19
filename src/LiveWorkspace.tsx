@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CompanySetup from "./CompanySetup";
 import EmployeeHome from "./EmployeeHome";
 import SurveyDialog from "./SurveyDialog";
 import {
@@ -43,6 +44,7 @@ export default function LiveWorkspace({
   onExit,
   onSwitchCompany,
 }: Props) {
+  const [setup, setSetup] = useState(false);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [participation, setParticipation] = useState<Participation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -206,6 +208,21 @@ export default function LiveWorkspace({
     void refresh();
   }
 
+  if (setup && membership.role !== "EMPLOYEE")
+    return (
+      <CompanySetup
+        session={session}
+        membership={membership}
+        onExpired={onExpired}
+        onExit={onExit}
+        onBack={() => {
+          setSetup(false);
+          void refresh();
+        }}
+        onSwitchCompany={onSwitchCompany}
+      />
+    );
+
   return (
     <>
       <EmployeeHome
@@ -229,6 +246,9 @@ export default function LiveWorkspace({
           setActive(null);
           void refresh();
         }}
+        onCompanySetup={
+          membership.role !== "EMPLOYEE" ? () => setSetup(true) : undefined
+        }
         onExit={onExit}
         onSwitchCompany={onSwitchCompany}
         assignments={assignments.map((a) => ({
