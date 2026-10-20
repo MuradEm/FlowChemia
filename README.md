@@ -380,3 +380,14 @@ For this release, update the backend first: pull, `npm.cmd ci`, migrate, generat
 build and restart. See the backend's
 [employee profile documentation](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/employee-profiles.md).
 Then pull this checkout and restart `npm.cmd run dev`. No database reset is needed.
+
+Compact team cards display every configured skill. Authorized team insight views
+(manager, independent HR and participating team leader) show five fixed segments:
+red below 20, orange from 20, yellow from 40, light green from 60 and strong green
+from 80 through 100. Only the categorical band is returned by the API, never the
+exact score. Employee personal views show a coloured dot and standard text:
+“Room for improvement”, “On the way” or “Doing well”. Unobserved, early and older
+feedback remain neutral, without a rated band. Selecting a card expands it and
+shows relationships only for that employee; existing visibility rules still apply.
+No migration or new dependency is required for the band display; update and restart
+both repositories so the API can supply bands and presentation capabilities.

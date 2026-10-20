@@ -477,7 +477,9 @@ export const pauseAutomaticSurveys = (token: string, org: string) =>
     body: { automaticEnabled: false },
   });
 
+export type SkillBand = "RED" | "ORANGE" | "YELLOW" | "LIGHT_GREEN" | "GREEN";
 export type InsightIndicator = {
+  band?: SkillBand | null;
   state: "UNKNOWN" | "EARLY" | "OLDER" | "POSITIVE" | "MIXED" | "DIFFICULT";
   label: string;
   reports: number;
@@ -487,6 +489,7 @@ export type InsightIndicator = {
 };
 export type PhotoScope = { token: string; org: string };
 export type EmployeeInsight = {
+  skillPresentation?: "BANDS" | "SUMMARY";
   profile?: Pick<
     PersonSummary,
     "jobTitle" | "department" | "location" | "photoUpdatedAt"

@@ -1,7 +1,47 @@
-import type { EmployeeInsight, InsightIndicator, PhotoScope } from "./api";
+import type {
+  EmployeeInsight,
+  InsightIndicator,
+  PhotoScope,
+  SkillBand,
+} from "./api";
 import ProfilePhoto from "./ProfilePhoto";
 import { Icon } from "./Icon";
 
+const bands: SkillBand[] = ["RED", "ORANGE", "YELLOW", "LIGHT_GREEN", "GREEN"];
+function SkillDisplay({
+  value,
+  summary,
+}: {
+  value: InsightIndicator;
+  summary: boolean;
+}) {
+  const active = value.band ? bands.indexOf(value.band) : -1;
+
+  return (
+    <div
+      className={`skill-display band-${value.band?.toLowerCase() ?? "unknown"}`}
+    >
+      {!summary && (
+        <span className="skill-band-bar" aria-hidden="true">
+          {bands.map((band, i) => (
+            <i
+              key={band}
+              className={`band-segment segment-${band.toLowerCase()} ${i <= active ? "active" : ""}`}
+            />
+          ))}
+        </span>
+      )}
+      {active < 0 ? (
+        <Indicator value={value} />
+      ) : (
+        <span className="skill-band-label">
+          <span className="skill-band-dot" aria-hidden="true" />
+          {value.label}
+        </span>
+      )}
+    </div>
+  );
+}
 export function Indicator({ value }: { value: InsightIndicator }) {
   return (
     <span className={`insight-indicator insight-${value.state.toLowerCase()}`}>
@@ -72,25 +112,23 @@ export function EmployeeCardContent({
         <div className="employee-skills">
           <div className="employee-section-label">
             <Icon name="spark" />
-            <h4>{expanded ? "Skills & experience" : "Skill highlights"}</h4>
+            <h4>Skills & experience</h4>
           </div>
           {employee.skills.length === 0 ? (
             <p className="setup-note">No skills have been configured yet.</p>
           ) : (
-            employee.skills.slice(0, expanded ? undefined : 3).map((skill) => (
+            employee.skills.map((skill) => (
               <div
                 className={`employee-skill skill-state-${skill.indicator.state.toLowerCase()}`}
                 key={skill.id}
               >
                 <div className="skill-caption">
                   <span>{skill.name}</span>
-                  <span className="skill-state-mark" aria-hidden="true">
-                    <i />
-                    <i />
-                    <i />
-                  </span>
                 </div>
-                <Indicator value={skill.indicator} />
+                <SkillDisplay
+                  value={skill.indicator}
+                  summary={employee.skillPresentation === "SUMMARY"}
+                />
                 {expanded && (
                   <small>
                     {skill.indicator.reports

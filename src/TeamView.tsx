@@ -427,7 +427,7 @@ export default function TeamView({
               )}
               {data.mode !== "ROSTER" && (
                 <div className="connection-legend">
-                  <h3>Reading the indicators</h3>
+                  <h3>Reading relationships</h3>
                   <p>
                     <span className="legend-dot positive" />
                     Positive experience
@@ -445,6 +445,13 @@ export default function TeamView({
                     Early, older or unobserved feedback
                   </p>
                 </div>
+              )}
+              {data.mode !== "ROSTER" && (
+                <p className="setup-note">
+                  Skills use five bands, from red to strong green. Grey means
+                  there is not enough current evidence. Each filled segment
+                  represents a band, rather than an exact score.
+                </p>
               )}
               <p className="setup-note">
                 These are reported experiences, not proof of productivity. Use
