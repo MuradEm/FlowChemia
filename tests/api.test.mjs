@@ -312,3 +312,31 @@ test("question revisions preserve their key and review decisions send only the s
   assert.deepEqual(JSON.parse(calls[2].options.body), { decision: "REJECTED" });
   assert.equal(calls[1].options.headers.Authorization, "Bearer hr-token");
 });
+
+test("company test mode changes are tenant-scoped and test batches carry an explicit replayable request ID", async () => {
+  const calls = [];
+  await withFetch(
+    async (path, options) => {
+      calls.push({ path, options });
+      return json({ testMode: true, isTest: true });
+    },
+    async () => {
+      const { setCompanyTestMode, generateTestSurveys } =
+        await import("../src/api.ts");
+      await setCompanyTestMode("token", "company", true);
+      await generateTestSurveys("token", "company", "same-request-id");
+      await generateTestSurveys("token", "company", "same-request-id");
+    },
+  );
+  assert.equal(calls[0].path, "/api/organizations/company/test-mode");
+  assert.equal(calls[0].options.method, "PATCH");
+  assert.deepEqual(JSON.parse(calls[0].options.body), { enabled: true });
+  for (const call of calls.slice(1)) {
+    assert.equal(call.path, "/api/organizations/company/surveys/generate-test");
+    assert.equal(call.options.method, "POST");
+    assert.deepEqual(JSON.parse(call.options.body), {
+      requestId: "same-request-id",
+    });
+    assert.equal(call.options.headers.Authorization, "Bearer token");
+  }
+});

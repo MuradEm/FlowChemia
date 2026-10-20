@@ -10,6 +10,7 @@ import {
   errorMessage,
   getAssignment,
   getTeams,
+  getOrganization,
   getQuestionCapabilities,
   getOpenAssignments,
   getParticipation,
@@ -55,6 +56,7 @@ export default function LiveWorkspace({
   >("home");
   const [questionCapabilities, setQuestionCapabilities] =
     useState<QuestionCapabilities | null>(null);
+  const [companyTestMode, setCompanyTestMode] = useState(false);
   const [hasTeams, setHasTeams] = useState(false);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [participation, setParticipation] = useState<Participation[]>([]);
@@ -81,13 +83,15 @@ export default function LiveWorkspace({
     setAssignments([]);
     setParticipation([]);
     setHasTeams(false);
+    setCompanyTestMode(false);
     setQuestionCapabilities(null);
     try {
-      const [open, history, teams, capabilities] = await Promise.all([
+      const [open, history, teams, capabilities, company] = await Promise.all([
         getOpenAssignments(session.token, org, controller.signal),
         getParticipation(session.token, org, controller.signal),
         getTeams(session.token, org, controller.signal),
         getQuestionCapabilities(session.token, org, controller.signal),
+        getOrganization(session.token, org, controller.signal),
       ]);
       if (
         !Array.isArray(open) ||
@@ -106,6 +110,7 @@ export default function LiveWorkspace({
         return;
       open.forEach((a) => labels.current.set(a.id, a.subject.displayName));
       setHasTeams(teams.length > 0);
+      setCompanyTestMode(company.testMode);
       setQuestionCapabilities(capabilities);
       setAssignments(open);
       setParticipation(history);
@@ -177,6 +182,7 @@ export default function LiveWorkspace({
       labels.current.set(id, detail.subject.displayName);
       setActive({
         id,
+        isTest: detail.isTest,
         subjectName: detail.subject.displayName,
         subtitle: detail.team.name,
         initials: initials(detail.subject.displayName),
@@ -300,6 +306,7 @@ export default function LiveWorkspace({
     <>
       <EmployeeHome
         mode="live"
+        testMode={companyTestMode}
         onQuestions={
           questionCapabilities?.canPropose || questionCapabilities?.canReview
             ? () => setView("questions")
@@ -337,8 +344,9 @@ export default function LiveWorkspace({
           id: a.id,
           colleague: {
             name: a.subject.displayName,
-            role:
-              a.type === "MILESTONE"
+            role: a.isTest
+              ? "Test colleague check-in"
+              : a.type === "MILESTONE"
                 ? "Project milestone"
                 : "Colleague check-in",
             initials: initials(a.subject.displayName),
@@ -350,7 +358,7 @@ export default function LiveWorkspace({
         }))}
         history={participation.map((p) => ({
           id: p.id,
-          label: labels.current.get(p.assignmentId) ?? "Check-in",
+          label: `${p.isTest ? "Test · " : ""}${labels.current.get(p.assignmentId) ?? "Check-in"}`,
           outcome: p.outcome,
           percentage: p.percentage,
           createdAt: p.createdAt,

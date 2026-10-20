@@ -1,3 +1,4 @@
+import CompanyTestBanner from "./CompanyTestBanner";
 import { useEffect, useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
 import { Icon } from "./Icon";
@@ -12,6 +13,8 @@ import {
   importStandardQuestions,
   generateCompanySurveys,
   pauseAutomaticSurveys,
+  setCompanyTestMode,
+  generateTestSurveys,
 } from "./api";
 import type {
   Membership,
@@ -91,6 +94,7 @@ export default function SurveySettings({
   const alive = useRef(false);
   const lock = useRef(false);
   const request = useRef<AbortController | null>(null);
+  const pendingTestRequest = useRef<string | null>(null);
   const org = membership.organization.id;
 
   async function load() {
@@ -198,9 +202,7 @@ export default function SurveySettings({
     !!form &&
     JSON.stringify(form) !==
       JSON.stringify(policyForm(schedule.pending ?? schedule.policy));
-  const periodProcessed =
-    !!schedule?.lastGeneration &&
-    schedule.lastGeneration.scheduledFor === schedule.opensAt;
+  const periodProcessed = !!schedule?.currentPeriodProcessed;
   const currentReady =
     !!schedule &&
     (schedule.policy.questionSelection === "ADAPTIVE"
@@ -219,6 +221,24 @@ export default function SurveySettings({
     setForm((previous) =>
       previous ? { ...previous, [key]: value } : previous,
     );
+  }
+  async function generateManual() {
+    if (schedule?.testMode || pendingTestRequest.current) {
+      const requestId = pendingTestRequest.current ?? crypto.randomUUID();
+      pendingTestRequest.current = requestId;
+      try {
+        return await generateTestSurveys(session.token, org, requestId);
+      } catch (failure) {
+        if (
+          failure instanceof ApiError &&
+          failure.status >= 400 &&
+          failure.status < 500
+        )
+          pendingTestRequest.current = null;
+        throw failure;
+      }
+    }
+    return generateCompanySurveys(session.token, org);
   }
   const zone = schedule?.policy.timeZone ?? "UTC";
 
@@ -287,6 +307,58 @@ export default function SurveySettings({
           <p className="loading-copy" role="status">
             {busy}…
           </p>
+        )}
+        {schedule?.testMode && <CompanyTestBanner />}
+        {schedule && (
+          <section
+            className="setup-panel test-mode-settings"
+            aria-labelledby="test-mode-heading"
+          >
+            <div>
+              <span className="eyebrow">COMPANY SETTING</span>
+              <h2 id="test-mode-heading">
+                Test mode · {schedule.testMode ? "Enabled" : "Off"}
+              </h2>
+              <p>
+                Allow extra manual batches in the same period. Employees must
+                still resolve every unanswered survey before receiving another
+                batch. Automatic generation keeps its normal schedule.
+              </p>
+              <p className="setup-note">
+                Test surveys use this company’s real records: answers,
+                participation and employee insights update normally. Turning
+                test mode off keeps all test surveys and feedback.
+              </p>
+              {dirty && (
+                <p className="setup-note">
+                  Save or refresh to discard unsaved schedule changes before
+                  switching test mode.
+                </p>
+              )}
+              {pendingTestRequest.current && (
+                <p className="setup-note">
+                  Confirm the previous test request before changing test mode.
+                </p>
+              )}
+            </div>
+            <button
+              className="secondary-button"
+              disabled={disabled || dirty || !!pendingTestRequest.current}
+              onClick={() =>
+                void perform(
+                  "Updating company test mode",
+                  () =>
+                    setCompanyTestMode(session.token, org, !schedule.testMode),
+                  (result) =>
+                    result.testMode
+                      ? "Company test mode enabled. Use the manual button for additional test batches."
+                      : "Company test mode disabled. Normal period limits apply again; existing test records are preserved.",
+                )
+              }
+            >
+              {schedule.testMode ? "Disable test mode" : "Enable test mode"}
+            </button>
+          </section>
         )}
         {schedule && (
           <section
@@ -595,8 +667,9 @@ export default function SurveySettings({
                 Generate surveys for everyone
               </h2>
               <p>
-                Run the company’s batch for the current period, including when
-                automatic generation is paused.
+                {schedule?.testMode
+                  ? "Generate an additional manual test batch now, even if this period has already been processed."
+                  : "Run the company’s batch for the current period, including when automatic generation is paused."}
               </p>
               <ul className="survey-rules">
                 <li>
@@ -608,24 +681,27 @@ export default function SurveySettings({
                   across all their teams.
                 </li>
                 <li>
-                  One batch per period. Finishing a survey does not create an
-                  extra batch in the same period.
+                  {schedule?.testMode
+                    ? "Test mode: after all outstanding surveys are finished, another manual batch can be generated immediately."
+                    : "One batch per period. Finishing a survey does not create an extra batch in the same period."}
                 </li>
                 <li>
                   Colleagues are distinct. Employees with too few teammates
                   receive fewer surveys.
                 </li>
               </ul>
-              {periodProcessed && (
-                <p className="auth-message" role="status">
-                  This period’s batch has already been processed. New batches
-                  can be generated from{" "}
-                  {schedule
-                    ? dateTime(schedule.closesAt, zone)
-                    : "the next period"}{" "}
-                  ({zone}).
-                </p>
-              )}
+              {periodProcessed &&
+                !schedule?.testMode &&
+                !pendingTestRequest.current && (
+                  <p className="auth-message" role="status">
+                    This period’s batch has already been processed. New batches
+                    can be generated from{" "}
+                    {schedule
+                      ? dateTime(schedule.closesAt, zone)
+                      : "the next period"}{" "}
+                    ({zone}).
+                  </p>
+                )}
               {dirty && (
                 <p className="setup-note">
                   Save or refresh to discard unsaved settings before generating.
@@ -639,24 +715,41 @@ export default function SurveySettings({
               )}
               <button
                 className="primary-button manual-generation-button"
-                disabled={disabled || dirty || !currentReady || periodProcessed}
+                disabled={
+                  disabled ||
+                  (!pendingTestRequest.current &&
+                    (dirty ||
+                      !currentReady ||
+                      (periodProcessed && !schedule?.testMode)))
+                }
                 onClick={() =>
                   void perform(
                     "Generating surveys",
-                    () => generateCompanySurveys(session.token, org),
-                    (result) =>
-                      result.alreadyProcessed
-                        ? "This period’s batch was already processed. No additional surveys were created."
-                        : `${result.createdAssignments} surveys created. ${result.blockedEmployees} employees blocked by outstanding surveys at this period’s boundary or now. ${result.employeesWithLimitedPeers} eligible employees had fewer colleagues than requested.`,
+                    () => generateManual(),
+                    (result) => {
+                      pendingTestRequest.current = null;
+                      if (result.alreadyProcessed)
+                        return result.isTest
+                          ? "The earlier test request was already processed. No duplicate was created. You can request a new test batch after outstanding surveys are resolved."
+                          : "This period’s batch was already processed. No additional surveys were created.";
+                      return result.isTest
+                        ? `${result.createdAssignments} test surveys created. ${result.blockedEmployees} employees currently have outstanding surveys. ${result.employeesWithLimitedPeers} eligible employees had fewer colleagues than requested.`
+                        : `${result.createdAssignments} surveys created. ${result.blockedEmployees} employees blocked by outstanding surveys at this period’s boundary or now. ${result.employeesWithLimitedPeers} eligible employees had fewer colleagues than requested.`;
+                    },
                   )
                 }
               >
-                Generate surveys for everyone <Icon name="arrow" />
+                {pendingTestRequest.current
+                  ? "Confirm previous test request"
+                  : schedule?.testMode
+                    ? "Generate test surveys for everyone"
+                    : "Generate surveys for everyone"}{" "}
+                <Icon name="arrow" />
               </button>
               <p className="setup-note">
-                The same period limit and unanswered-survey rules apply to
-                manual and automatic generation. People who finished an older
-                survey during this period wait until the next period.
+                {schedule?.testMode
+                  ? "Only the manual test button bypasses period timing. Question approval, five-question format, distinct peers and unanswered-survey blocking remain in force."
+                  : "The same period limit and unanswered-survey rules apply to manual and automatic generation. People who finished an older survey during this period wait until the next period."}
               </p>
             </section>
             {schedule?.lastGeneration && (
@@ -664,7 +757,10 @@ export default function SurveySettings({
                 className="setup-panel"
                 aria-labelledby="last-generation-heading"
               >
-                <h2 id="last-generation-heading">Last generation</h2>
+                <h2 id="last-generation-heading">
+                  Last generation
+                  {schedule.lastGeneration.isTest ? " · Test batch" : ""}
+                </h2>
                 <dl className="generation-results">
                   <div>
                     <dt>Period starting</dt>

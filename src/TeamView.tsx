@@ -1,3 +1,4 @@
+import CompanyTestBanner from "./CompanyTestBanner";
 import { useEffect, useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
 import FocusConnections from "./FocusConnections";
@@ -171,6 +172,7 @@ export default function TeamView({
             <Icon name="refresh" /> Refresh team
           </button>
         </div>
+        {data?.testMode && <CompanyTestBanner />}
         {teams.length > 0 && (
           <div className="team-toolbar">
             <div>

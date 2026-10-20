@@ -2876,3 +2876,35 @@ textarea {
     gap: 15px;
   }
 }
+.company-test-banner {
+  background: #fff4da;
+  border: 1px solid #e3cca0;
+  color: #72531f;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0 0 24px;
+}
+.company-test-banner strong {
+  color: #65491a;
+}
+.test-mode-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+}
+.test-mode-settings > div {
+  max-width: 800px;
+}
+.test-mode-settings > button {
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .test-mode-settings {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+  }
+}

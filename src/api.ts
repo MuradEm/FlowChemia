@@ -15,6 +15,7 @@ export type Session = {
   user: { id: string; displayName: string };
 };
 export type AssignmentSummary = {
+  isTest?: boolean;
   id: string;
   teamId: string;
   teamName: string;
@@ -24,6 +25,7 @@ export type AssignmentSummary = {
   closesAt: string | null;
 };
 export type AssignmentDetail = {
+  isTest?: boolean;
   id: string;
   team: { id: string; name: string };
   type: string;
@@ -42,6 +44,7 @@ export type AssignmentDetail = {
   }[];
 };
 export type Participation = {
+  isTest?: boolean;
   id: string;
   assignmentId: string;
   outcome: "COMPLETED" | "SKIPPED";
@@ -353,6 +356,7 @@ export type SurveyPolicy = {
   questionVersionIds: string[];
 };
 export type GenerationReceipt = {
+  isTest: boolean;
   id: string;
   scheduledFor: string;
   createdAt: string;
@@ -361,6 +365,8 @@ export type GenerationReceipt = {
   employeesWithLimitedPeers: number;
 };
 export type SurveySchedule = {
+  testMode: boolean;
+  currentPeriodProcessed: boolean;
   policy: SurveyPolicy;
   opensAt: string;
   closesAt: string;
@@ -392,6 +398,7 @@ export type ScheduleChange = {
   questionVersionIds: string[];
 };
 export type GenerationResult = {
+  isTest: boolean;
   generationId: string;
   periodStart: string;
   periodEnd: string;
@@ -499,6 +506,7 @@ export type RelationshipInsight = {
   combined: InsightIndicator | null;
 };
 export type TeamInsights = {
+  testMode: boolean;
   team: { id: string; name: string };
   mode: "TEAM" | "PERSONAL" | "ROSTER";
   modelVersion: string;
@@ -590,4 +598,35 @@ export const createCompanySkill = (token: string, org: string, name: string) =>
     token,
     method: "POST",
     body: { name: name.trim() },
+  });
+
+export const setCompanyTestMode = (
+  token: string,
+  org: string,
+  enabled: boolean,
+) =>
+  apiRequest<{ testMode: boolean }>(`${orgPath(org)}/test-mode`, {
+    token,
+    method: "PATCH",
+    body: { enabled },
+  });
+export const generateTestSurveys = (
+  token: string,
+  org: string,
+  requestId: string,
+) =>
+  apiRequest<GenerationResult>(`${orgPath(org)}/surveys/generate-test`, {
+    token,
+    method: "POST",
+    body: { requestId },
+    timeoutMs: 45000,
+  });
+export const getOrganization = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<{ id: string; name: string; testMode: boolean }>(orgPath(org), {
+    token,
+    signal,
   });

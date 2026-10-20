@@ -1,3 +1,4 @@
+import CompanyTestBanner from "./CompanyTestBanner";
 import { useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
 import { Icon } from "./Icon";
@@ -7,6 +8,7 @@ import type { HomeAssignment, HistoryRecord } from "./workspace";
 
 type Props = {
   mode: "demo" | "live";
+  testMode?: boolean;
   displayName: string;
   companyName: string;
   roleLabel: string;
@@ -252,6 +254,7 @@ export default function EmployeeHome(props: Props) {
               </button>
             )}
           </div>
+          {!demo && props.testMode && <CompanyTestBanner />}
           {demo && (
             <div className="demo-banner">
               <span>

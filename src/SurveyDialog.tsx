@@ -162,6 +162,12 @@ export default function SurveyDialog({
               </p>
             </div>
           </div>
+          {survey.isTest && (
+            <p className="company-test-banner">
+              <strong>Test survey.</strong> Answers and participation are saved
+              to this company and update employee insights.
+            </p>
+          )}
           {survey.closesAt && (
             <p className="deadline-label">
               Available until {formatDate(survey.closesAt)}

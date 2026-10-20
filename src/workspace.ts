@@ -15,6 +15,7 @@ export type HistoryRecord = {
 };
 export type SurveyQuestion = { id: string; text: string; category: string };
 export type SurveyView = {
+  isTest?: boolean;
   id: string;
   subjectName: string;
   subtitle: string;

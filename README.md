@@ -333,3 +333,30 @@ revisions, approved questions enter adaptive surveys, an employee completes the
 issued survey, and later approved versions only affect new surveys. Browser
 checks also cover hidden actions, role revocation, uncertain responses, company
 switching, native dialog keyboard behaviour, axe AA and five viewport widths.
+
+## Company test mode
+
+Owner and HR can enable **Test mode** in Survey settings. Use **Generate test
+surveys for everyone** to issue extra manual batches without waiting for the next
+period. All of an employee's unresolved surveys still block their next batch;
+finishing only one of two is insufficient. Team eligibility, independent HR,
+approved questions, five-question format, distinct peers and configured one/two
+colleague count still apply. Automatic generation keeps its normal period limit.
+
+This uses the same company database records: test answers affect participation,
+completion reports and employee/pair insights. The scoring formula and evidence
+rules stay unchanged. The app shows a company banner, test check-in/credit labels,
+and a test marker on generation results. Disabling test mode restores normal
+manual timing and retains all existing test surveys, answers and credits.
+
+Each deliberate test batch gets a UUID. If a response is lost, refresh and choose
+**Confirm previous test request**; it reuses the UUID and cannot duplicate an
+already-created batch. Once confirmed, a new click can request another batch.
+The mode defaults off and is saved per company; it doesn't depend on browser
+storage or a global development flag. Roles without survey administration don't
+see the toggle or batch actions.
+
+Update the API before the frontend: migration 11, Prisma generation and an API
+rebuild are required. Follow the API's [company test mode update instructions](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/local-frontend.md#update-for-company-test-mode).
+The [test-mode contract](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/test-mode.md)
+documents persistence, retries, remaining rules and normal/test receipt separation.
