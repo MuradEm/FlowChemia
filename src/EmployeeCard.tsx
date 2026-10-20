@@ -117,27 +117,29 @@ export function EmployeeCardContent({
           {employee.skills.length === 0 ? (
             <p className="setup-note">No skills have been configured yet.</p>
           ) : (
-            employee.skills.map((skill) => (
-              <div
-                className={`employee-skill skill-state-${skill.indicator.state.toLowerCase()}`}
-                key={skill.id}
-              >
-                <div className="skill-caption">
-                  <span>{skill.name}</span>
+            <div className="employee-skill-grid">
+              {employee.skills.map((skill) => (
+                <div
+                  className={`employee-skill skill-state-${skill.indicator.state.toLowerCase()}`}
+                  key={skill.id}
+                >
+                  <div className="skill-caption">
+                    <span>{skill.name}</span>
+                  </div>
+                  <SkillDisplay
+                    value={skill.indicator}
+                    summary={employee.skillPresentation === "SUMMARY"}
+                  />
+                  {expanded && (
+                    <small>
+                      {skill.indicator.reports
+                        ? `${skill.indicator.reports} weekly observation${skill.indicator.reports === 1 ? "" : "s"} · ${skill.indicator.reviewers} colleague${skill.indicator.reviewers === 1 ? "" : "s"}`
+                        : "No observed feedback yet"}
+                    </small>
+                  )}
                 </div>
-                <SkillDisplay
-                  value={skill.indicator}
-                  summary={employee.skillPresentation === "SUMMARY"}
-                />
-                {expanded && (
-                  <small>
-                    {skill.indicator.reports
-                      ? `${skill.indicator.reports} weekly observation${skill.indicator.reports === 1 ? "" : "s"} · ${skill.indicator.reviewers} colleague${skill.indicator.reviewers === 1 ? "" : "s"}`
-                      : "No observed feedback yet"}
-                  </small>
-                )}
-              </div>
-            ))
+              ))}
+            </div>
           )}
           <div className="employee-evidence-note">
             <Icon name={observed.length ? "shield" : "clock"} />
