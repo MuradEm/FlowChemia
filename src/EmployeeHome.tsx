@@ -1,3 +1,5 @@
+import ProfilePhoto from "./ProfilePhoto";
+import type { PhotoScope } from "./api";
 import CompanyTestBanner from "./CompanyTestBanner";
 import { useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
@@ -28,6 +30,13 @@ type Props = {
   onSurveySettings?: () => void;
   onTeams?: () => void;
   onQuestions?: () => void;
+  onProfile?: () => void;
+  onPeople?: () => void;
+  profilePhoto?: {
+    scope: PhotoScope;
+    membershipId: string;
+    version?: string | null;
+  };
   onExit: () => void;
 };
 
@@ -150,6 +159,18 @@ export default function EmployeeHome(props: Props) {
               )}
             </a>
           ))}
+          {props.onProfile && (
+            <button className="nav-item" onClick={props.onProfile}>
+              <Icon name="camera" />
+              <span>My profile</span>
+            </button>
+          )}
+          {props.onPeople && (
+            <button className="nav-item" onClick={props.onPeople}>
+              <Icon name="people" />
+              <span>People</span>
+            </button>
+          )}
           {onCompanySetup && (
             <button className="nav-item" onClick={onCompanySetup}>
               <Icon name="building" />
@@ -218,9 +239,17 @@ export default function EmployeeHome(props: Props) {
             </button>
             <span className="topbar-divider" />
             <div className="user-profile">
-              <span className="avatar small user-avatar">
-                {initials(displayName)}
-              </span>
+              {props.profilePhoto ? (
+                <ProfilePhoto
+                  name={displayName}
+                  {...props.profilePhoto}
+                  className="topbar-profile-photo"
+                />
+              ) : (
+                <span className="avatar small user-avatar">
+                  {initials(displayName)}
+                </span>
+              )}
               <div>
                 <strong>{displayName}</strong>
                 <span>{demo ? "Employee · sample profile" : roleLabel}</span>

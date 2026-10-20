@@ -124,6 +124,7 @@ export async function apiRequest<T>(
       409: path.includes("/assignments/")
         ? "This check-in has changed or is already closed. Refresh your check-ins before continuing."
         : "This record already exists or has changed. Refresh before continuing.",
+      413: "This photo is too large. Choose a smaller image.",
       429: "Too many attempts. Please wait a minute and try again.",
     };
     throw new ApiError(
@@ -484,7 +485,12 @@ export type InsightIndicator = {
   firstAt: string | null;
   lastAt: string | null;
 };
+export type PhotoScope = { token: string; org: string };
 export type EmployeeInsight = {
+  profile?: Pick<
+    PersonSummary,
+    "jobTitle" | "department" | "location" | "photoUpdatedAt"
+  >;
   membershipId: string;
   displayName: string;
   role: string;
@@ -629,4 +635,77 @@ export const getOrganization = (
   apiRequest<{ id: string; name: string; testMode: boolean }>(orgPath(org), {
     token,
     signal,
+  });
+
+export type ProfessionalInfo = {
+  jobTitle: string | null;
+  department: string | null;
+  location: string | null;
+  workEmail: string | null;
+  workPhone: string | null;
+};
+export type PersonSummary = Pick<
+  ProfessionalInfo,
+  "jobTitle" | "department" | "location"
+> & {
+  membershipId: string;
+  displayName: string;
+  photoUpdatedAt: string | null;
+};
+export type EmployeeProfile = PersonSummary &
+  ProfessionalInfo & {
+    canEditInfo: boolean;
+    canEditPhoto: boolean;
+  };
+const employeePath = (org: string, id: string) =>
+  `${orgPath(org)}/employees/${encodeURIComponent(id)}`;
+export const getPeople = (token: string, org: string, signal?: AbortSignal) =>
+  apiRequest<PersonSummary[]>(`${orgPath(org)}/employees`, { token, signal });
+export const getEmployeeProfile = (
+  token: string,
+  org: string,
+  id: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<EmployeeProfile>(`${employeePath(org, id)}/profile`, {
+    token,
+    signal,
+  });
+export const updateEmployeeProfile = (
+  token: string,
+  org: string,
+  id: string,
+  info: Partial<ProfessionalInfo>,
+) =>
+  apiRequest<EmployeeProfile>(`${employeePath(org, id)}/profile`, {
+    token,
+    method: "PATCH",
+    body: info,
+  });
+export const getEmployeePhoto = (
+  token: string,
+  org: string,
+  id: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<{ dataUrl: string | null }>(`${employeePath(org, id)}/photo`, {
+    token,
+    signal,
+  });
+export const updateEmployeePhoto = (
+  token: string,
+  org: string,
+  id: string,
+  dataUrl: string,
+) =>
+  apiRequest<EmployeeProfile>(`${employeePath(org, id)}/photo`, {
+    token,
+    method: "PATCH",
+    body: { dataUrl },
+    timeoutMs: 30000,
+  });
+export const removeEmployeePhoto = (token: string, org: string, id: string) =>
+  apiRequest<EmployeeProfile>(`${employeePath(org, id)}/photo`, {
+    token,
+    method: "DELETE",
   });

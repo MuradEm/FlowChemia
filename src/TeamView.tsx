@@ -21,6 +21,8 @@ type Props = {
   onBack: () => void;
   onSwitchCompany: () => void;
   onCompanySetup?: () => void;
+  onProfile: (id: string, teamId: string) => void;
+  initialTeam?: { id: string; focus?: string };
 };
 function Direction({
   name,
@@ -52,6 +54,8 @@ export default function TeamView({
   onBack,
   onSwitchCompany,
   onCompanySetup,
+  onProfile,
+  initialTeam,
 }: Props) {
   const [teams, setTeams] = useState<TeamSummary[]>([]);
   const [teamId, setTeamId] = useState("");
@@ -63,6 +67,7 @@ export default function TeamView({
     request = useRef<AbortController | null>(null);
   const focusLayout = useRef<HTMLDivElement>(null);
   const org = membership.organization.id;
+  const photoScope = { token: session.token, org };
   async function load(id = teamId, person?: string) {
     request.current?.abort();
     const controller = new AbortController();
@@ -108,7 +113,7 @@ export default function TeamView({
   }
   useEffect(() => {
     alive.current = true;
-    void load();
+    void load(initialTeam?.id, initialTeam?.focus);
     return () => {
       alive.current = false;
       request.current?.abort();
@@ -253,12 +258,22 @@ export default function TeamView({
                   {data.employees.map((e) =>
                     data.mode === "ROSTER" ? (
                       <article className="employee-card" key={e.membershipId}>
-                        <EmployeeCardContent employee={e} />
+                        <EmployeeCardContent
+                          employee={e}
+                          photoScope={photoScope}
+                        />
+                        <button
+                          className="employee-card-link profile-link-button"
+                          onClick={() => onProfile(e.membershipId, teamId)}
+                        >
+                          View profile <Icon name="arrow" />
+                        </button>
                       </article>
                     ) : (
                       <EmployeeCard
                         key={e.membershipId}
                         employee={e}
+                        photoScope={photoScope}
                         onSelect={() => void load(teamId, e.membershipId)}
                       />
                     ),
@@ -275,7 +290,17 @@ export default function TeamView({
                     className="employee-card selected-employee"
                     aria-label={`Selected employee ${selected.displayName}`}
                   >
-                    <EmployeeCardContent employee={selected} expanded />
+                    <EmployeeCardContent
+                      employee={selected}
+                      expanded
+                      photoScope={photoScope}
+                    />
+                    <button
+                      className="employee-card-link profile-link-button"
+                      onClick={() => onProfile(selected.membershipId, teamId)}
+                    >
+                      View profile & contact <Icon name="arrow" />
+                    </button>
                     {!selected.skills && (
                       <p className="setup-note">
                         Skill insights are available in your personal view or to

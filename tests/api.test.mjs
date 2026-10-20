@@ -340,3 +340,54 @@ test("company test mode changes are tenant-scoped and test batches carry an expl
     assert.equal(call.options.headers.Authorization, "Bearer token");
   }
 });
+
+test("employee profile and photo actions keep company scope and separate work info from photo changes", async () => {
+  const {
+    getEmployeeProfile,
+    getEmployeePhoto,
+    updateEmployeeProfile,
+    updateEmployeePhoto,
+    removeEmployeePhoto,
+    getPeople,
+  } = await import("../src/api.ts");
+  const calls = [];
+  await withFetch(
+    async (path, options) => {
+      calls.push({ path, ...options });
+      return json({});
+    },
+    async () => {
+      await getPeople("token", "company");
+      await getEmployeeProfile("token", "company", "employee");
+      await updateEmployeeProfile("token", "company", "employee", {
+        jobTitle: "PLC Programmer",
+        workPhone: null,
+      });
+      await getEmployeePhoto("token", "company", "employee");
+      await updateEmployeePhoto(
+        "token",
+        "company",
+        "employee",
+        "data:image/jpeg;base64,fixture",
+      );
+      await removeEmployeePhoto("token", "company", "employee");
+    },
+  );
+  assert.ok(
+    calls.every(
+      (c) =>
+        c.path.startsWith("/api/organizations/company/employees") &&
+        c.headers.Authorization === "Bearer token" &&
+        c.cache === "no-store",
+    ),
+  );
+  assert.deepEqual(JSON.parse(calls[2].body), {
+    jobTitle: "PLC Programmer",
+    workPhone: null,
+  });
+  assert.deepEqual(JSON.parse(calls[4].body), {
+    dataUrl: "data:image/jpeg;base64,fixture",
+  });
+  assert.equal(calls[5].method, "DELETE");
+  assert.equal(calls[5].body, undefined);
+});

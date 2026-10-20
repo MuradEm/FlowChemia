@@ -1,4 +1,16 @@
 const paths = {
+  camera: (
+    <>
+      <path d="M4 7h4l2-3h4l2 3h4v13H4z" />
+      <circle cx="12" cy="13" r="4" />
+    </>
+  ),
+  location: (
+    <>
+      <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </>
+  ),
   home: <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" />,
   survey: (
     <>

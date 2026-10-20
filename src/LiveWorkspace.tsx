@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import QuestionManagement from "./QuestionManagement";
+import EmployeeProfilePage from "./EmployeeProfilePage";
+import PeoplePage from "./PeoplePage";
 import TeamView from "./TeamView";
 import SurveySettings from "./SurveySettings";
 import CompanySetup from "./CompanySetup";
@@ -9,6 +11,7 @@ import {
   ApiError,
   errorMessage,
   getAssignment,
+  getEmployeeProfile,
   getTeams,
   getOrganization,
   getQuestionCapabilities,
@@ -20,6 +23,7 @@ import {
 } from "./api";
 import type {
   AssignmentSummary,
+  EmployeeProfile,
   Membership,
   QuestionCapabilities,
   Participation,
@@ -52,10 +56,21 @@ export default function LiveWorkspace({
   onSwitchCompany,
 }: Props) {
   const [view, setView] = useState<
-    "home" | "setup" | "settings" | "teams" | "questions"
+    "home" | "setup" | "settings" | "teams" | "questions" | "people" | "profile"
   >("home");
   const [questionCapabilities, setQuestionCapabilities] =
     useState<QuestionCapabilities | null>(null);
+  const [ownProfile, setOwnProfile] = useState<EmployeeProfile | null>(null);
+  const [profileId, setProfileId] = useState(membership.id);
+  const teamReturn = useRef<{ id: string; focus?: string } | undefined>(
+    undefined,
+  );
+  const profileBack = useRef<"home" | "teams" | "people">("home");
+  function openProfile(id: string, back: "home" | "teams" | "people") {
+    setProfileId(id);
+    profileBack.current = back;
+    setView("profile");
+  }
   const [companyTestMode, setCompanyTestMode] = useState(false);
   const [hasTeams, setHasTeams] = useState(false);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
@@ -86,13 +101,20 @@ export default function LiveWorkspace({
     setCompanyTestMode(false);
     setQuestionCapabilities(null);
     try {
-      const [open, history, teams, capabilities, company] = await Promise.all([
-        getOpenAssignments(session.token, org, controller.signal),
-        getParticipation(session.token, org, controller.signal),
-        getTeams(session.token, org, controller.signal),
-        getQuestionCapabilities(session.token, org, controller.signal),
-        getOrganization(session.token, org, controller.signal),
-      ]);
+      const [open, history, teams, capabilities, company, profile] =
+        await Promise.all([
+          getOpenAssignments(session.token, org, controller.signal),
+          getParticipation(session.token, org, controller.signal),
+          getTeams(session.token, org, controller.signal),
+          getQuestionCapabilities(session.token, org, controller.signal),
+          getOrganization(session.token, org, controller.signal),
+          getEmployeeProfile(
+            session.token,
+            org,
+            membership.id,
+            controller.signal,
+          ),
+        ]);
       if (
         !Array.isArray(open) ||
         !Array.isArray(history) ||
@@ -111,6 +133,7 @@ export default function LiveWorkspace({
       open.forEach((a) => labels.current.set(a.id, a.subject.displayName));
       setHasTeams(teams.length > 0);
       setCompanyTestMode(company.testMode);
+      setOwnProfile(profile);
       setQuestionCapabilities(capabilities);
       setAssignments(open);
       setParticipation(history);
@@ -235,6 +258,32 @@ export default function LiveWorkspace({
     void refresh();
   }
 
+  if (view === "profile")
+    return (
+      <EmployeeProfilePage
+        key={profileId}
+        session={session}
+        membership={membership}
+        employeeId={profileId}
+        onExpired={onExpired}
+        onExit={onExit}
+        onBack={() => {
+          setView(profileBack.current);
+          void refresh();
+        }}
+      />
+    );
+  if (view === "people")
+    return (
+      <PeoplePage
+        session={session}
+        membership={membership}
+        onBack={() => setView("home")}
+        onOpen={(id) => openProfile(id, "people")}
+        onExpired={onExpired}
+        onExit={onExit}
+      />
+    );
   if (view === "questions")
     return (
       <QuestionManagement
@@ -252,6 +301,11 @@ export default function LiveWorkspace({
   if (view === "teams")
     return (
       <TeamView
+        initialTeam={teamReturn.current}
+        onProfile={(id, teamId) => {
+          teamReturn.current = { id: teamId, focus: id };
+          openProfile(id, "teams");
+        }}
         session={session}
         membership={membership}
         onExpired={onExpired}
@@ -306,6 +360,13 @@ export default function LiveWorkspace({
     <>
       <EmployeeHome
         mode="live"
+        onProfile={() => openProfile(membership.id, "home")}
+        onPeople={() => setView("people")}
+        profilePhoto={{
+          scope: { token: session.token, org },
+          membershipId: membership.id,
+          version: ownProfile?.photoUpdatedAt,
+        }}
         testMode={companyTestMode}
         onQuestions={
           questionCapabilities?.canPropose || questionCapabilities?.canReview

@@ -1,5 +1,6 @@
-import type { EmployeeInsight, InsightIndicator } from "./api";
-import { initials } from "./workspace";
+import type { EmployeeInsight, InsightIndicator, PhotoScope } from "./api";
+import ProfilePhoto from "./ProfilePhoto";
+import { Icon } from "./Icon";
 
 export function Indicator({ value }: { value: InsightIndicator }) {
   return (
@@ -23,38 +24,72 @@ export function Indicator({ value }: { value: InsightIndicator }) {
 export function EmployeeCardContent({
   employee,
   expanded = false,
+  photoScope,
 }: {
   employee: EmployeeInsight;
   expanded?: boolean;
+  photoScope?: PhotoScope;
 }) {
+  const role =
+    employee.role === "MANAGER"
+      ? "Manager"
+      : employee.role === "TEAM_LEADER"
+        ? "Team leader"
+        : "Team participant";
+  const observed =
+    employee.skills?.filter((s) => s.indicator.reports > 0) ?? [];
   return (
     <>
+      <div className="employee-card-accent" aria-hidden="true" />
       <div className="employee-identity">
-        <span className="avatar employee-avatar">
-          {initials(employee.displayName)}
-        </span>
+        <ProfilePhoto
+          name={employee.displayName}
+          membershipId={employee.membershipId}
+          version={employee.profile?.photoUpdatedAt}
+          scope={photoScope}
+          className="employee-portrait"
+        />
         <div>
-          <h3>
-            {employee.displayName}
+          <div className="employee-role-label">
+            {role}
             {employee.isYou && <span className="you-label">You</span>}
-          </h3>
-          <p>
-            {employee.role === "MANAGER"
-              ? "Manager"
-              : employee.role === "TEAM_LEADER"
-                ? "Team leader"
-                : "Team participant"}
+          </div>
+          <h3>{employee.displayName}</h3>
+          <p className="employee-job-title">
+            {employee.profile?.jobTitle || "Job title not added"}
           </p>
+          {employee.profile?.department && (
+            <span className="department-chip">
+              {employee.profile.department}
+            </span>
+          )}
+          {employee.profile?.location && (
+            <p className="employee-location">{employee.profile.location}</p>
+          )}
         </div>
       </div>
       {employee.skills && (
         <div className="employee-skills">
+          <div className="employee-section-label">
+            <Icon name="spark" />
+            <h4>{expanded ? "Skills & experience" : "Skill highlights"}</h4>
+          </div>
           {employee.skills.length === 0 ? (
             <p className="setup-note">No skills have been configured yet.</p>
           ) : (
             employee.skills.slice(0, expanded ? undefined : 3).map((skill) => (
-              <div className="employee-skill" key={skill.id}>
-                <span>{skill.name}</span>
+              <div
+                className={`employee-skill skill-state-${skill.indicator.state.toLowerCase()}`}
+                key={skill.id}
+              >
+                <div className="skill-caption">
+                  <span>{skill.name}</span>
+                  <span className="skill-state-mark" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                </div>
                 <Indicator value={skill.indicator} />
                 {expanded && (
                   <small>
@@ -66,6 +101,14 @@ export function EmployeeCardContent({
               </div>
             ))
           )}
+          <div className="employee-evidence-note">
+            <Icon name={observed.length ? "shield" : "clock"} />
+            <span>
+              {observed.length
+                ? "Read each skill with its evidence context."
+                : "Getting to know this colleague. Insights appear as feedback arrives."}
+            </span>
+          </div>
         </div>
       )}
     </>
@@ -74,9 +117,11 @@ export function EmployeeCardContent({
 export default function EmployeeCard({
   employee,
   onSelect,
+  photoScope,
 }: {
   employee: EmployeeInsight;
   onSelect: () => void;
+  photoScope?: PhotoScope;
 }) {
   return (
     <button
@@ -84,9 +129,9 @@ export default function EmployeeCard({
       onClick={onSelect}
       aria-label={`View ${employee.displayName}`}
     >
-      <EmployeeCardContent employee={employee} />
+      <EmployeeCardContent employee={employee} photoScope={photoScope} />
       <span className="employee-card-link">
-        View employee <span aria-hidden="true">→</span>
+        View employee <Icon name="arrow" />
       </span>
     </button>
   );

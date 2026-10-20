@@ -360,3 +360,23 @@ Update the API before the frontend: migration 11, Prisma generation and an API
 rebuild are required. Follow the API's [company test mode update instructions](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/local-frontend.md#update-for-company-test-mode).
 The [test-mode contract](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/test-mode.md)
 documents persistence, retries, remaining rules and normal/test receipt separation.
+
+Employee cards now follow the design kit's portrait-led white-and-teal layout,
+with job title, department, location and qualitative skill indicators. Exact
+skill and chemistry scores remain internal, and relationship lines still appear
+only after selecting a person.
+
+Use **My profile** to upload, preview, save or remove your own photo, and **People**
+or a selected team card's **View profile & contact** link to open employee profiles.
+Professional information includes job title, department, location, work email and
+work phone. Employees and team leaders see read-only professional details; assigned
+managers can edit participants in their current teams, and HR/company owners can
+edit across the company. Photo controls appear only on your own profile. Work
+email never changes the sign-in account. Profiles and photos are company-specific.
+
+The API enforces these permissions and privately stores normalized JPEG portraits
+in PostgreSQL. The browser doesn't persist profiles or photos in local storage.
+For this release, update the backend first: pull, `npm.cmd ci`, migrate, generate,
+build and restart. See the backend's
+[employee profile documentation](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/employee-profiles.md).
+Then pull this checkout and restart `npm.cmd run dev`. No database reset is needed.
