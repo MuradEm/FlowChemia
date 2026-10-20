@@ -285,3 +285,51 @@ Existing raw answers are retained; missing summaries are filled on first access,
 and future completed surveys recalculate/save affected summaries from the full
 company history. The chosen model, early-feedback thresholds and cache behaviour
 are documented in the API's [insight contract](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/insights.md).
+
+## Question management
+
+This completes the company/team → questions → surveys → employee insights loop.
+Open **Question management** from the workspace sidebar as an owner, HR,
+manager of a running team, or current participating team leader. Owner/HR can
+also open it from **Manage custom questions** in Survey settings. The frontend
+uses the API's fresh capability response to hide unavailable actions; it never
+uses a team role guessed from a company role. Ordinary employees don't see the
+management entry, and the backend rechecks permission on every write.
+
+- **Propose question:** write the question, select Skills, Enjoyment, or
+  Collaboration effectiveness. Skill questions can map to 1–10 active company
+  skills. Set positive percentages totalling 100%; two decimal places are
+  supported. Chemistry questions don't affect skills. The preview shows a
+  rating-only question, with Not observed and no written employee responses.
+- **Review:** HR sees draft proposals and can approve or reject one version with
+  an optional note. Owners, managers and leaders don't see review controls.
+  A rejected version and its note remain visible to its author and owner/HR.
+  HR may also author drafts; these still need an explicit review.
+- **Revise:** choose **Propose new version**. It copies the wording/mappings and
+  preserves the question's internal reference. The backend creates the next
+  version as a draft, with a fresh HR review required. Older wording, mappings,
+  decisions, assigned surveys and answers remain unchanged. Search and filters
+  include all versions; earlier versions are labelled.
+- **Skills and standards:** owner/HR can add a company skill. HR can review and
+  approve/import missing standard questions and skills. Other roles don't see
+  these actions. Skill activation/deletion and question deletion aren't provided.
+- **Survey use:** approved versions become eligible for future adaptive surveys,
+  according to the coverage algorithm. Approval doesn't issue surveys or change
+  an existing fixed question set. Use the existing survey settings/generation
+  screen to issue the next eligible batch.
+
+Drafts and real company data stay in memory, never browser storage. Pending
+mutations disable repeated clicks. If a result is uncertain, close the dialog,
+refresh and inspect the library before retrying. Revoked permissions hide actions
+and a refresh clears stale company data. The capability endpoint requires the
+updated backend; update it first using the API's
+[question-management update instructions](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/local-frontend.md#update-for-question-management).
+There are no new dependencies or database migrations in this feature.
+
+Verification includes exact decimal-weight and API-client tests, API role and
+version/approval tests, and a real browser flow with a disposable PostgreSQL
+instance: owner creates skills, manager/leader propose, HR rejects and approves
+revisions, approved questions enter adaptive surveys, an employee completes the
+issued survey, and later approved versions only affect new surveys. Browser
+checks also cover hidden actions, role revocation, uncertain responses, company
+switching, native dialog keyboard behaviour, axe AA and five viewport widths.

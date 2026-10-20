@@ -65,6 +65,7 @@ type Props = {
   onBack: () => void;
   onSwitchCompany: () => void;
   onCompanySetup: () => void;
+  onQuestionManagement?: () => void;
 };
 
 export default function SurveySettings({
@@ -75,6 +76,7 @@ export default function SurveySettings({
   onBack,
   onSwitchCompany,
   onCompanySetup,
+  onQuestionManagement,
 }: Props) {
   const [schedule, setSchedule] = useState<SurveySchedule | null>(null);
   const [form, setForm] = useState<ScheduleChange | null>(null);
@@ -700,6 +702,11 @@ export default function SurveySettings({
           aria-labelledby="question-library-heading"
         >
           <h2 id="question-library-heading">Approved question library</h2>
+          {onQuestionManagement && (
+            <button className="text-button" onClick={onQuestionManagement}>
+              Manage custom questions <Icon name="arrow" />
+            </button>
+          )}
           <p>
             {pool.filter((q) => q.dimension === "SKILL").length} skill questions
             · {pool.filter((q) => q.dimension === "CHEMISTRY_ENJOYMENT").length}{" "}

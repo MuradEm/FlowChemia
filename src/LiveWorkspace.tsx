@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import QuestionManagement from "./QuestionManagement";
 import TeamView from "./TeamView";
 import SurveySettings from "./SurveySettings";
 import CompanySetup from "./CompanySetup";
@@ -9,6 +10,7 @@ import {
   errorMessage,
   getAssignment,
   getTeams,
+  getQuestionCapabilities,
   getOpenAssignments,
   getParticipation,
   replaceAssignment,
@@ -18,6 +20,7 @@ import {
 import type {
   AssignmentSummary,
   Membership,
+  QuestionCapabilities,
   Participation,
   Session,
 } from "./api";
@@ -47,9 +50,11 @@ export default function LiveWorkspace({
   onExit,
   onSwitchCompany,
 }: Props) {
-  const [view, setView] = useState<"home" | "setup" | "settings" | "teams">(
-    "home",
-  );
+  const [view, setView] = useState<
+    "home" | "setup" | "settings" | "teams" | "questions"
+  >("home");
+  const [questionCapabilities, setQuestionCapabilities] =
+    useState<QuestionCapabilities | null>(null);
   const [hasTeams, setHasTeams] = useState(false);
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [participation, setParticipation] = useState<Participation[]>([]);
@@ -76,11 +81,13 @@ export default function LiveWorkspace({
     setAssignments([]);
     setParticipation([]);
     setHasTeams(false);
+    setQuestionCapabilities(null);
     try {
-      const [open, history, teams] = await Promise.all([
+      const [open, history, teams, capabilities] = await Promise.all([
         getOpenAssignments(session.token, org, controller.signal),
         getParticipation(session.token, org, controller.signal),
         getTeams(session.token, org, controller.signal),
+        getQuestionCapabilities(session.token, org, controller.signal),
       ]);
       if (
         !Array.isArray(open) ||
@@ -99,6 +106,7 @@ export default function LiveWorkspace({
         return;
       open.forEach((a) => labels.current.set(a.id, a.subject.displayName));
       setHasTeams(teams.length > 0);
+      setQuestionCapabilities(capabilities);
       setAssignments(open);
       setParticipation(history);
     } catch (failure) {
@@ -221,6 +229,20 @@ export default function LiveWorkspace({
     void refresh();
   }
 
+  if (view === "questions")
+    return (
+      <QuestionManagement
+        session={session}
+        membership={membership}
+        onExpired={onExpired}
+        onExit={onExit}
+        onSwitchCompany={onSwitchCompany}
+        onBack={() => {
+          setView("home");
+          void refresh();
+        }}
+      />
+    );
   if (view === "teams")
     return (
       <TeamView
@@ -251,6 +273,11 @@ export default function LiveWorkspace({
         }}
         onSwitchCompany={onSwitchCompany}
         onCompanySetup={() => setView("setup")}
+        onQuestionManagement={
+          questionCapabilities?.canPropose || questionCapabilities?.canReview
+            ? () => setView("questions")
+            : undefined
+        }
       />
     );
   if (view === "setup" && membership.role !== "EMPLOYEE")
@@ -273,6 +300,11 @@ export default function LiveWorkspace({
     <>
       <EmployeeHome
         mode="live"
+        onQuestions={
+          questionCapabilities?.canPropose || questionCapabilities?.canReview
+            ? () => setView("questions")
+            : undefined
+        }
         onTeams={hasTeams ? () => setView("teams") : undefined}
         displayName={displayName}
         companyName={membership.organization.name}

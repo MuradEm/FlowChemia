@@ -262,3 +262,53 @@ test("immediate pause sends only the pause flag, preserving the API's ability to
     },
   );
 });
+
+test("question revisions preserve their key and review decisions send only the selected version and optional trimmed note", async () => {
+  const calls = [];
+  await withFetch(
+    async (path, options) => {
+      calls.push({ path, options });
+      return json({ id: "version", version: 2 });
+    },
+    async () => {
+      const { proposeQuestion, reviewQuestion } = await import("../src/api.ts");
+      const proposal = {
+        questionKey: "same-question",
+        text: "Revised wording",
+        dimension: "SKILL",
+        skillWeights: [
+          { skillId: "a", weight: 0.6 },
+          { skillId: "b", weight: 0.4 },
+        ],
+      };
+      await proposeQuestion("private-token", "company", proposal);
+      await reviewQuestion(
+        "hr-token",
+        "company",
+        "version",
+        "APPROVED",
+        "  Suitable wording.  ",
+      );
+      await reviewQuestion(
+        "hr-token",
+        "company",
+        "other-version",
+        "REJECTED",
+        "   ",
+      );
+    },
+  );
+  assert.equal(calls[0].path, "/api/organizations/company/questions");
+  assert.equal(calls[0].options.method, "POST");
+  assert.equal(JSON.parse(calls[0].options.body).questionKey, "same-question");
+  assert.equal(
+    calls[1].path,
+    "/api/organizations/company/questions/version/review",
+  );
+  assert.deepEqual(JSON.parse(calls[1].options.body), {
+    decision: "APPROVED",
+    note: "Suitable wording.",
+  });
+  assert.deepEqual(JSON.parse(calls[2].options.body), { decision: "REJECTED" });
+  assert.equal(calls[1].options.headers.Authorization, "Bearer hr-token");
+});

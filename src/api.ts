@@ -517,3 +517,77 @@ export const getTeamInsights = (
     `${teamPath(org, team)}/insights${focus ? `?focus=${encodeURIComponent(focus)}` : ""}`,
     { token, signal, timeoutMs: 45000 },
   );
+
+export type QuestionCapabilities = {
+  canPropose: boolean;
+  canReview: boolean;
+  canManageSkills: boolean;
+  canImportStandard: boolean;
+};
+export type ManagedQuestion = SurveyQuestion & {
+  version: number;
+  approvalOrigin: string | null;
+  createdByMembershipId: string | null;
+  reviewedByMembershipId: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  standardTemplateKey: string | null;
+};
+export type CompanySkill = SurveySkill & { name: string };
+export type QuestionProposal = {
+  questionKey: string;
+  text: string;
+  dimension: "SKILL" | "CHEMISTRY_ENJOYMENT" | "CHEMISTRY_EFFECTIVENESS";
+  skillWeights: { skillId: string; weight: number }[];
+};
+export const getQuestionCapabilities = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<QuestionCapabilities>(`${orgPath(org)}/questions/capabilities`, {
+    token,
+    signal,
+  });
+export const getManagedQuestions = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<ManagedQuestion[]>(`${orgPath(org)}/questions`, { token, signal });
+export const getCompanySkills = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) => apiRequest<CompanySkill[]>(`${orgPath(org)}/skills`, { token, signal });
+export const proposeQuestion = (
+  token: string,
+  org: string,
+  body: QuestionProposal,
+) =>
+  apiRequest<ManagedQuestion>(`${orgPath(org)}/questions`, {
+    token,
+    method: "POST",
+    body,
+  });
+export const reviewQuestion = (
+  token: string,
+  org: string,
+  id: string,
+  decision: "APPROVED" | "REJECTED",
+  note: string,
+) =>
+  apiRequest<ManagedQuestion>(
+    `${orgPath(org)}/questions/${encodeURIComponent(id)}/review`,
+    {
+      token,
+      method: "POST",
+      body: { decision, ...(note.trim() ? { note: note.trim() } : {}) },
+    },
+  );
+export const createCompanySkill = (token: string, org: string, name: string) =>
+  apiRequest<CompanySkill>(`${orgPath(org)}/skills`, {
+    token,
+    method: "POST",
+    body: { name: name.trim() },
+  });
