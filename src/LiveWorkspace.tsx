@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import WorkspaceShell from "./WorkspaceShell";
+import type { WorkspaceView } from "./WorkspaceShell";
+import { WorkspaceContext } from "./WorkspaceContext";
+import TeamBuilder from "./TeamBuilder";
+import { useEffect, useRef, useState, useMemo } from "react";
 import QuestionManagement from "./QuestionManagement";
 import EmployeeProfilePage from "./EmployeeProfilePage";
 import PeoplePage from "./PeoplePage";
@@ -11,6 +15,8 @@ import {
   ApiError,
   errorMessage,
   getAssignment,
+  getOwnCard,
+  getBuilderCapabilities,
   getEmployeeProfile,
   getTeams,
   getOrganization,
@@ -23,6 +29,8 @@ import {
 } from "./api";
 import type {
   AssignmentSummary,
+  EmployeeInsight,
+  BuilderCapabilities,
   EmployeeProfile,
   Membership,
   QuestionCapabilities,
@@ -55,9 +63,54 @@ export default function LiveWorkspace({
   onExit,
   onSwitchCompany,
 }: Props) {
-  const [view, setView] = useState<
-    "home" | "setup" | "settings" | "teams" | "questions" | "people" | "profile"
-  >("home");
+  const [view, setView] = useState<WorkspaceView>("home");
+  const guard = useRef<(() => boolean) | null>(null);
+  const workspaceContext = useMemo(
+    () => ({
+      registerGuard: (check: () => boolean) => {
+        guard.current = check;
+        return () => {
+          if (guard.current === check) guard.current = null;
+        };
+      },
+    }),
+    [],
+  );
+  function go(next: WorkspaceView) {
+    if (next === view) return true;
+    if (guard.current && !guard.current()) return false;
+    setView(next);
+    return true;
+  }
+  const [builderCapabilities, setBuilderCapabilities] =
+    useState<BuilderCapabilities | null>(null);
+  const [ownCard, setOwnCard] = useState<EmployeeInsight | null>(null);
+  const [cardLoading, setCardLoading] = useState(false),
+    [cardError, setCardError] = useState("");
+  const cardController = useRef<AbortController | null>(null);
+  async function loadOwnCard() {
+    cardController.current?.abort();
+    const controller = new AbortController();
+    cardController.current = controller;
+    setCardLoading(true);
+    setCardError("");
+    setOwnCard(null);
+    try {
+      const card = await getOwnCard(
+        session.token,
+        membership.organization.id,
+        controller.signal,
+      );
+      if (!controller.signal.aborted && alive.current) setOwnCard(card);
+    } catch (f) {
+      if (!controller.signal.aborted && alive.current) {
+        if (f instanceof ApiError && f.status === 401) onExpired();
+        else setCardError(errorMessage(f));
+      }
+    } finally {
+      if (!controller.signal.aborted && alive.current) setCardLoading(false);
+    }
+  }
   const [questionCapabilities, setQuestionCapabilities] =
     useState<QuestionCapabilities | null>(null);
   const [ownProfile, setOwnProfile] = useState<EmployeeProfile | null>(null);
@@ -67,6 +120,12 @@ export default function LiveWorkspace({
   );
   const profileBack = useRef<"home" | "teams" | "people">("home");
   function openProfile(id: string, back: "home" | "teams" | "people") {
+    if (
+      guard.current &&
+      (view !== "profile" || id !== profileId) &&
+      !guard.current()
+    )
+      return;
     setProfileId(id);
     profileBack.current = back;
     setView("profile");
@@ -99,15 +158,16 @@ export default function LiveWorkspace({
     setParticipation([]);
     setHasTeams(false);
     setCompanyTestMode(false);
-    setQuestionCapabilities(null);
+
     try {
-      const [open, history, teams, capabilities, company, profile] =
+      const [open, history, teams, capabilities, company, builder, profile] =
         await Promise.all([
           getOpenAssignments(session.token, org, controller.signal),
           getParticipation(session.token, org, controller.signal),
           getTeams(session.token, org, controller.signal),
           getQuestionCapabilities(session.token, org, controller.signal),
           getOrganization(session.token, org, controller.signal),
+          getBuilderCapabilities(session.token, org, controller.signal),
           getEmployeeProfile(
             session.token,
             org,
@@ -134,6 +194,7 @@ export default function LiveWorkspace({
       setHasTeams(teams.length > 0);
       setCompanyTestMode(company.testMode);
       setOwnProfile(profile);
+      setBuilderCapabilities(builder);
       setQuestionCapabilities(capabilities);
       setAssignments(open);
       setParticipation(history);
@@ -163,6 +224,7 @@ export default function LiveWorkspace({
       alive.current = false;
       listController.current?.abort();
       detailController.current?.abort();
+      cardController.current?.abort();
     };
     // This component is keyed by session and company in AccountWorkspace.
   }, []);
@@ -258,210 +320,268 @@ export default function LiveWorkspace({
     void refresh();
   }
 
-  if (view === "profile")
-    return (
-      <EmployeeProfilePage
-        key={profileId}
-        session={session}
-        membership={membership}
-        employeeId={profileId}
-        onExpired={onExpired}
-        onExit={onExit}
-        onBack={() => {
-          setView(profileBack.current);
-          void refresh();
-        }}
-      />
-    );
-  if (view === "people")
-    return (
-      <PeoplePage
-        session={session}
-        membership={membership}
-        onBack={() => setView("home")}
-        onOpen={(id) => openProfile(id, "people")}
-        onExpired={onExpired}
-        onExit={onExit}
-      />
-    );
-  if (view === "questions")
-    return (
-      <QuestionManagement
-        session={session}
-        membership={membership}
-        onExpired={onExpired}
-        onExit={onExit}
-        onSwitchCompany={onSwitchCompany}
-        onBack={() => {
-          setView("home");
-          void refresh();
-        }}
-      />
-    );
-  if (view === "teams")
-    return (
-      <TeamView
-        initialTeam={teamReturn.current}
-        onProfile={(id, teamId) => {
-          teamReturn.current = { id: teamId, focus: id };
-          openProfile(id, "teams");
-        }}
-        session={session}
-        membership={membership}
-        onExpired={onExpired}
-        onExit={onExit}
-        onSwitchCompany={onSwitchCompany}
-        onBack={() => {
-          setView("home");
-          void refresh();
-        }}
-        onCompanySetup={
-          membership.role !== "EMPLOYEE" ? () => setView("setup") : undefined
-        }
-      />
-    );
-  if (view === "settings" && membership.role !== "EMPLOYEE")
-    return (
-      <SurveySettings
-        session={session}
-        membership={membership}
-        onExpired={onExpired}
-        onExit={onExit}
-        onBack={() => {
-          setView("home");
-          void refresh();
-        }}
-        onSwitchCompany={onSwitchCompany}
-        onCompanySetup={() => setView("setup")}
-        onQuestionManagement={
-          questionCapabilities?.canPropose || questionCapabilities?.canReview
-            ? () => setView("questions")
-            : undefined
-        }
-      />
-    );
-  if (view === "setup" && membership.role !== "EMPLOYEE")
-    return (
-      <CompanySetup
-        session={session}
-        membership={membership}
-        onExpired={onExpired}
-        onExit={onExit}
-        onBack={() => {
-          setView("home");
-          void refresh();
-        }}
-        onSwitchCompany={onSwitchCompany}
-        onSurveySettings={() => setView("settings")}
-      />
-    );
-
-  return (
-    <>
-      <EmployeeHome
-        mode="live"
-        onProfile={() => openProfile(membership.id, "home")}
-        onPeople={() => setView("people")}
-        profilePhoto={{
-          scope: { token: session.token, org },
-          membershipId: membership.id,
-          version: ownProfile?.photoUpdatedAt,
-        }}
-        testMode={companyTestMode}
-        onQuestions={
-          questionCapabilities?.canPropose || questionCapabilities?.canReview
-            ? () => setView("questions")
-            : undefined
-        }
-        onTeams={hasTeams ? () => setView("teams") : undefined}
-        displayName={displayName}
-        companyName={membership.organization.name}
-        roleLabel={
-          membership.role === "HR_ADMIN"
-            ? "HR administrator"
-            : membership.role === "OWNER"
-              ? "Company owner"
-              : "Employee"
-        }
-        loading={loading}
-        error={error}
-        notice={notice}
-        noticeTone={noticeError ? "error" : "success"}
-        onDismissNotice={() => setNotice("")}
-        onOpen={(id) => void openAssignment(id)}
-        onRefresh={() => {
-          setActive(null);
-          void refresh();
-        }}
-        onSurveySettings={
-          membership.role !== "EMPLOYEE" ? () => setView("settings") : undefined
-        }
-        onCompanySetup={
-          membership.role !== "EMPLOYEE" ? () => setView("setup") : undefined
-        }
-        onExit={onExit}
-        onSwitchCompany={onSwitchCompany}
-        assignments={assignments.map((a) => ({
-          id: a.id,
-          colleague: {
-            name: a.subject.displayName,
-            role: a.isTest
-              ? "Test colleague check-in"
-              : a.type === "MILESTONE"
-                ? "Project milestone"
-                : "Colleague check-in",
-            initials: initials(a.subject.displayName),
-            color: "teal",
-          },
-          teamName: a.teamName,
-          closesAt: a.closesAt,
-          requiresReplacement: a.requiresReplacement,
-        }))}
-        history={participation.map((p) => ({
-          id: p.id,
-          label: `${p.isTest ? "Test · " : ""}${labels.current.get(p.assignmentId) ?? "Check-in"}`,
-          outcome: p.outcome,
-          percentage: p.percentage,
-          createdAt: p.createdAt,
-        }))}
-      />
-      {opening && (
-        <div className="opening-notice" role="status">
-          Loading your check-in…
-        </div>
-      )}
-      {active && (
-        <SurveyDialog
-          key={active.id}
-          mode="live"
-          survey={active}
-          onClose={() => setActive(null)}
-          onRefresh={refreshFromDialog}
-          onSubmit={(answers) =>
-            perform(
-              () => submitAssignment(session.token, org, active.id, answers),
-              (result) =>
-                `Your check-in is complete. ${result.participationPercentage}% participation credit was recorded.`,
-            )
-          }
-          onSkip={() =>
-            perform(
-              () => skipAssignment(session.token, org, active.id),
-              (result) =>
-                `Your check-in was skipped. ${result.participationPercentage}% participation credit was recorded.`,
-            )
-          }
-          onReplace={() =>
-            perform(
-              () => replaceAssignment(session.token, org, active.id),
-              (result) =>
-                result.outcome === "REPLACED"
-                  ? "Your check-in now has another colleague. No participation credit has been earned yet."
-                  : "No eligible colleague is available. This check-in is closed; participation credit has not been awarded.",
-            )
+  function renderContent() {
+    if (view === "builder" && builderCapabilities?.canUse)
+      return (
+        <TeamBuilder
+          session={session}
+          membership={membership}
+          onExpired={onExpired}
+          onSaved={(teamId) => {
+            teamReturn.current = { id: teamId };
+            setView("teams");
+            void refresh();
+          }}
+        />
+      );
+    if (view === "profile")
+      return (
+        <EmployeeProfilePage
+          key={profileId}
+          session={session}
+          membership={membership}
+          employeeId={profileId}
+          onExpired={onExpired}
+          onExit={onExit}
+          onBack={() => {
+            setView(profileBack.current);
+            void refresh();
+          }}
+        />
+      );
+    if (view === "people")
+      return (
+        <PeoplePage
+          session={session}
+          membership={membership}
+          onBack={() => setView("home")}
+          onOpen={(id) => openProfile(id, "people")}
+          onExpired={onExpired}
+          onExit={onExit}
+        />
+      );
+    if (view === "questions")
+      return (
+        <QuestionManagement
+          session={session}
+          membership={membership}
+          onExpired={onExpired}
+          onExit={onExit}
+          onSwitchCompany={onSwitchCompany}
+          onBack={() => {
+            setView("home");
+            void refresh();
+          }}
+        />
+      );
+    if (view === "teams")
+      return (
+        <TeamView
+          initialTeam={teamReturn.current}
+          onProfile={(id, teamId) => {
+            teamReturn.current = { id: teamId, focus: id };
+            openProfile(id, "teams");
+          }}
+          session={session}
+          membership={membership}
+          onExpired={onExpired}
+          onExit={onExit}
+          onSwitchCompany={onSwitchCompany}
+          onBack={() => {
+            setView("home");
+            void refresh();
+          }}
+          onCompanySetup={
+            membership.role !== "EMPLOYEE" ? () => setView("setup") : undefined
           }
         />
-      )}
-    </>
+      );
+    if (view === "settings" && membership.role !== "EMPLOYEE")
+      return (
+        <SurveySettings
+          session={session}
+          membership={membership}
+          onExpired={onExpired}
+          onExit={onExit}
+          onBack={() => {
+            setView("home");
+            void refresh();
+          }}
+          onSwitchCompany={onSwitchCompany}
+          onCompanySetup={() => setView("setup")}
+          onQuestionManagement={
+            questionCapabilities?.canPropose || questionCapabilities?.canReview
+              ? () => setView("questions")
+              : undefined
+          }
+        />
+      );
+    if (view === "setup" && membership.role !== "EMPLOYEE")
+      return (
+        <CompanySetup
+          session={session}
+          membership={membership}
+          onExpired={onExpired}
+          onExit={onExit}
+          onBack={() => {
+            setView("home");
+            void refresh();
+          }}
+          onSwitchCompany={onSwitchCompany}
+          onSurveySettings={() => setView("settings")}
+        />
+      );
+
+    return (
+      <>
+        <EmployeeHome
+          mode="live"
+          onProfile={() => openProfile(membership.id, "home")}
+          onPeople={() => setView("people")}
+          profilePhoto={{
+            scope: { token: session.token, org },
+            membershipId: membership.id,
+            version: ownProfile?.photoUpdatedAt,
+          }}
+          testMode={companyTestMode}
+          onQuestions={
+            questionCapabilities?.canPropose || questionCapabilities?.canReview
+              ? () => setView("questions")
+              : undefined
+          }
+          onTeams={hasTeams ? () => setView("teams") : undefined}
+          displayName={displayName}
+          companyName={membership.organization.name}
+          roleLabel={
+            membership.role === "HR_ADMIN"
+              ? "HR administrator"
+              : membership.role === "OWNER"
+                ? "Company owner"
+                : "Employee"
+          }
+          loading={loading}
+          error={error}
+          notice={notice}
+          noticeTone={noticeError ? "error" : "success"}
+          onDismissNotice={() => setNotice("")}
+          onOpen={(id) => void openAssignment(id)}
+          onRefresh={() => {
+            setActive(null);
+            void refresh();
+          }}
+          onSurveySettings={
+            membership.role !== "EMPLOYEE"
+              ? () => setView("settings")
+              : undefined
+          }
+          onCompanySetup={
+            membership.role !== "EMPLOYEE" ? () => setView("setup") : undefined
+          }
+          onExit={onExit}
+          onSwitchCompany={onSwitchCompany}
+          assignments={assignments.map((a) => ({
+            id: a.id,
+            colleague: {
+              name: a.subject.displayName,
+              role: a.isTest
+                ? "Test colleague check-in"
+                : a.type === "MILESTONE"
+                  ? "Project milestone"
+                  : "Colleague check-in",
+              initials: initials(a.subject.displayName),
+              color: "teal",
+            },
+            teamName: a.teamName,
+            closesAt: a.closesAt,
+            requiresReplacement: a.requiresReplacement,
+          }))}
+          history={participation.map((p) => ({
+            id: p.id,
+            label: `${p.isTest ? "Test · " : ""}${labels.current.get(p.assignmentId) ?? "Check-in"}`,
+            outcome: p.outcome,
+            percentage: p.percentage,
+            createdAt: p.createdAt,
+          }))}
+        />
+        {opening && (
+          <div className="opening-notice" role="status">
+            Loading your check-in…
+          </div>
+        )}
+        {active && (
+          <SurveyDialog
+            key={active.id}
+            mode="live"
+            survey={active}
+            onClose={() => setActive(null)}
+            onRefresh={refreshFromDialog}
+            onSubmit={(answers) =>
+              perform(
+                () => submitAssignment(session.token, org, active.id, answers),
+                (result) =>
+                  `Your check-in is complete. ${result.participationPercentage}% participation credit was recorded.`,
+              )
+            }
+            onSkip={() =>
+              perform(
+                () => skipAssignment(session.token, org, active.id),
+                (result) =>
+                  `Your check-in was skipped. ${result.participationPercentage}% participation credit was recorded.`,
+              )
+            }
+            onReplace={() =>
+              perform(
+                () => replaceAssignment(session.token, org, active.id),
+                (result) =>
+                  result.outcome === "REPLACED"
+                    ? "Your check-in now has another colleague. No participation credit has been earned yet."
+                    : "No eligible colleague is available. This check-in is closed; participation credit has not been awarded.",
+              )
+            }
+          />
+        )}
+      </>
+    );
+  }
+  function guarded(action: () => void) {
+    if (!guard.current || guard.current()) action();
+  }
+  return (
+    <WorkspaceContext.Provider value={workspaceContext}>
+      <WorkspaceShell
+        view={view}
+        session={session}
+        membership={membership}
+        displayName={displayName}
+        profile={ownProfile}
+        card={ownCard}
+        cardLoading={cardLoading}
+        cardError={cardError}
+        onLoadCard={() => void loadOwnCard()}
+        onNavigate={(next) => {
+          if (go(next) && (next === "home" || view === "profile"))
+            void refresh();
+        }}
+        onProfile={() => openProfile(membership.id, "home")}
+        onExit={() => guarded(onExit)}
+        onSwitchCompany={() => guarded(onSwitchCompany)}
+        canQuestions={
+          !!(
+            questionCapabilities?.canPropose || questionCapabilities?.canReview
+          )
+        }
+        canBuild={!!builderCapabilities?.canUse}
+        onSection={(id) => {
+          if (go("home"))
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() =>
+                document.getElementById(id)?.scrollIntoView({ block: "start" }),
+              ),
+            );
+        }}
+      >
+        {renderContent()}
+      </WorkspaceShell>
+    </WorkspaceContext.Provider>
   );
 }

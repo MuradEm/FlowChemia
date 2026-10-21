@@ -1,3 +1,4 @@
+import { PageHeader, useWorkspaceGuard } from "./WorkspaceContext";
 import { useEffect, useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
 import ProfilePhoto from "./ProfilePhoto";
@@ -168,6 +169,12 @@ export default function EmployeeProfilePage({
       if (alive.current && number === selection.current) setBusy(false);
     }
   }
+  useWorkspaceGuard(
+    () =>
+      !busy &&
+      (!(dirty || photoDirty) ||
+        window.confirm("Discard your unsaved profile changes?")),
+  );
   function leave() {
     if (
       (dirty || photoDirty) &&
@@ -181,7 +188,7 @@ export default function EmployeeProfilePage({
       <a className="skip-link" href="#profile-content">
         Skip to content
       </a>
-      <header className="setup-header">
+      <PageHeader>
         <button className="brand setup-brand" onClick={leave}>
           <img src={brandIcon} alt="" />
           <span>
@@ -196,7 +203,7 @@ export default function EmployeeProfilePage({
             Sign out
           </button>
         </nav>
-      </header>
+      </PageHeader>
       <main id="profile-content" className="setup-content profile-content">
         <div className="page-heading">
           <div>

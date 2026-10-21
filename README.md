@@ -391,3 +391,22 @@ feedback remain neutral, without a rated band. Selecting a card expands it and
 shows relationships only for that employee; existing visibility rules still apply.
 No migration or new dependency is required for the band display; update and restart
 both repositories so the API can supply bands and presentation capabilities.
+
+All live company pages now share the sidebar and sticky account header. On phones,
+use the header's navigation button to open the menu. Click your photo/initials to
+open your own company card, then go to your profile or teams. Escape/outside clicks
+close the popup. Navigation protects unfinished profile, question, survey-setting,
+invitation and team-draft changes. The offline demo retains its separate layout.
+
+**Team builder** creates and edits real teams. Owners/HR can create teams and assign
+managers/leaders; managers can edit teams they manage using their scoped candidate
+pool. Filter employees, select participants, review every visible skill, then focus
+a selected person to inspect their permitted chemistry. Draft selection does not
+grant feedback access. Unknown feedback stays neutral. Saves preserve history and
+do not generate surveys. An uncertain save offers **Confirm previous save** and
+replays the same request instead of creating a duplicate team.
+
+Update the API first and apply its additive team-builder retry-receipt migration,
+then pull and restart this frontend. See the backend
+[team builder documentation](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/team-builder.md).
+There are no new frontend dependencies.

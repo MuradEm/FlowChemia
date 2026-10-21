@@ -712,3 +712,80 @@ export const removeEmployeePhoto = (token: string, org: string, id: string) =>
     token,
     method: "DELETE",
   });
+
+export type BuilderCapabilities = {
+  canUse: boolean;
+  canCreate: boolean;
+  canAssignRoles: boolean;
+  teams: TeamSummary[];
+};
+export type BuilderDraft = {
+  id: string;
+  revision: string;
+  name: string;
+  startsAt: string;
+  endsAt: string | null;
+  membershipIds: string[];
+  managerIds: string[];
+  leaderIds: string[];
+};
+export type BuilderCatalog = Omit<BuilderCapabilities, "canUse"> & {
+  employees: EmployeeInsight[];
+  draft: BuilderDraft | null;
+  hasHiddenParticipants: boolean;
+};
+export type BuilderSave = {
+  requestId: string;
+  teamId?: string;
+  revision?: string;
+  name: string;
+  startsAt: string;
+  endsAt: string | null;
+  membershipIds: string[];
+  managerIds?: string[];
+  leaderIds?: string[];
+};
+export const getOwnCard = (token: string, org: string, signal?: AbortSignal) =>
+  apiRequest<EmployeeInsight>(`${orgPath(org)}/my-card`, {
+    token,
+    signal,
+    timeoutMs: 30000,
+  });
+export const getBuilderCapabilities = (
+  token: string,
+  org: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<BuilderCapabilities>(`${orgPath(org)}/team-builder/capabilities`, {
+    token,
+    signal,
+  });
+export const getBuilderCatalog = (
+  token: string,
+  org: string,
+  teamId?: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<BuilderCatalog>(
+    `${orgPath(org)}/team-builder${teamId ? `?teamId=${encodeURIComponent(teamId)}` : ""}`,
+    { token, signal, timeoutMs: 45000 },
+  );
+export const previewBuilder = (
+  token: string,
+  org: string,
+  membershipIds: string[],
+  focus?: string,
+  signal?: AbortSignal,
+) =>
+  apiRequest<TeamInsights>(`${orgPath(org)}/team-builder/preview`, {
+    token,
+    signal,
+    method: "POST",
+    body: { membershipIds, ...(focus ? { focus } : {}) },
+    timeoutMs: 45000,
+  });
+export const saveBuilder = (token: string, org: string, body: BuilderSave) =>
+  apiRequest<{ teamId: string; alreadySaved: boolean }>(
+    `${orgPath(org)}/team-builder/save`,
+    { token, method: "POST", body, timeoutMs: 45000 },
+  );

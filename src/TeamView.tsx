@@ -1,3 +1,4 @@
+import { PageHeader } from "./WorkspaceContext";
 import CompanyTestBanner from "./CompanyTestBanner";
 import { useEffect, useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
@@ -134,7 +135,7 @@ export default function TeamView({
       <a className="skip-link" href="#teams-content">
         Skip to content
       </a>
-      <header className="setup-header">
+      <PageHeader>
         <button className="brand setup-brand" onClick={onBack}>
           <img src={brandIcon} alt="" />
           <span>
@@ -157,7 +158,7 @@ export default function TeamView({
             Sign out
           </button>
         </nav>
-      </header>
+      </PageHeader>
       <main id="teams-content" className="setup-content teams-content">
         <div className="page-heading">
           <div>

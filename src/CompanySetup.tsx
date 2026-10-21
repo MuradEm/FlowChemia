@@ -1,3 +1,4 @@
+import { PageHeader, useWorkspaceGuard } from "./WorkspaceContext";
 import { useEffect, useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
 import { Icon } from "./Icon";
@@ -74,6 +75,14 @@ export default function CompanySetup({
   const [addId, setAddId] = useState("");
   const [grantId, setGrantId] = useState("");
   const [grantRole, setGrantRole] = useState<TeamRole>("MANAGER");
+  useWorkspaceGuard(
+    () =>
+      !busy &&
+      (!invitation ||
+        window.confirm(
+          "Leave this invitation? Save its token before leaving; it will no longer be shown.",
+        )),
+  );
   const alive = useRef(false);
   const locked = useRef(false);
   const controller = useRef<AbortController | null>(null);
@@ -187,7 +196,7 @@ export default function CompanySetup({
       <a className="skip-link" href="#setup-content">
         Skip to content
       </a>
-      <header className="setup-header">
+      <PageHeader>
         <button className="brand setup-brand" onClick={onBack}>
           <img src={brandIcon} alt="" />
           <span>
@@ -208,7 +217,7 @@ export default function CompanySetup({
             Sign out
           </button>
         </nav>
-      </header>
+      </PageHeader>
       <main id="setup-content" className="setup-content">
         <div className="page-heading">
           <div>

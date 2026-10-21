@@ -1,3 +1,4 @@
+import { PageHeader, useWorkspaceGuard } from "./WorkspaceContext";
 import CompanyTestBanner from "./CompanyTestBanner";
 import { useEffect, useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
@@ -97,7 +98,9 @@ export default function SurveySettings({
   const pendingTestRequest = useRef<string | null>(null);
   const org = membership.organization.id;
 
+  const formTouched = useRef(false);
   async function load() {
+    formTouched.current = false;
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
@@ -202,6 +205,13 @@ export default function SurveySettings({
     !!form &&
     JSON.stringify(form) !==
       JSON.stringify(policyForm(schedule.pending ?? schedule.policy));
+  useWorkspaceGuard(
+    () =>
+      !busy &&
+      (!dirty ||
+        !formTouched.current ||
+        window.confirm("Discard unsaved survey settings?")),
+  );
   const periodProcessed = !!schedule?.currentPeriodProcessed;
   const currentReady =
     !!schedule &&
@@ -218,6 +228,7 @@ export default function SurveySettings({
     key: K,
     value: ScheduleChange[K],
   ) {
+    formTouched.current = true;
     setForm((previous) =>
       previous ? { ...previous, [key]: value } : previous,
     );
@@ -247,7 +258,7 @@ export default function SurveySettings({
       <a className="skip-link" href="#survey-settings-content">
         Skip to content
       </a>
-      <header className="setup-header">
+      <PageHeader>
         <button className="brand setup-brand" onClick={onBack}>
           <img src={brandIcon} alt="" />
           <span>
@@ -268,7 +279,7 @@ export default function SurveySettings({
             Sign out
           </button>
         </nav>
-      </header>
+      </PageHeader>
       <main id="survey-settings-content" className="setup-content">
         <div className="page-heading">
           <div>

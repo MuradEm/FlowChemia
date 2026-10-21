@@ -1,3 +1,4 @@
+import { PageHeader } from "./WorkspaceContext";
 import { useEffect, useState } from "react";
 import { ApiError, errorMessage, getPeople } from "./api";
 import type { Membership, PersonSummary, Session } from "./api";
@@ -50,7 +51,7 @@ export default function PeoplePage({
       <a className="skip-link" href="#people-content">
         Skip to content
       </a>
-      <header className="setup-header">
+      <PageHeader>
         <button className="brand setup-brand" onClick={onBack}>
           <img src={brandIcon} alt="" />
           <span>
@@ -65,7 +66,7 @@ export default function PeoplePage({
             Sign out
           </button>
         </nav>
-      </header>
+      </PageHeader>
       <main id="people-content" className="setup-content">
         <div className="page-heading">
           <div>

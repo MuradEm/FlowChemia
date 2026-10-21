@@ -1,4 +1,6 @@
 const paths = {
+  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  down: <path d="m6 9 6 6 6-6" />,
   camera: (
     <>
       <path d="M4 7h4l2-3h4l2 3h4v13H4z" />

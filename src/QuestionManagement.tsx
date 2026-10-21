@@ -1,3 +1,4 @@
+import { PageHeader, useWorkspaceGuard } from "./WorkspaceContext";
 import { useEffect, useRef, useState } from "react";
 import brandIcon from "../design-kit/assets/flowchemia-icon-transparent.png";
 import { Icon } from "./Icon";
@@ -61,6 +62,11 @@ export default function QuestionManagement({
     [status, setStatus] = useState("ALL"),
     [category, setCategory] = useState("ALL");
   const [skillName, setSkillName] = useState("");
+  useWorkspaceGuard(
+    () =>
+      !busy &&
+      (!composer || window.confirm("Discard the unfinished question?")),
+  );
   const alive = useRef(false),
     locked = useRef(false),
     request = useRef<AbortController | null>(null);
@@ -206,7 +212,7 @@ export default function QuestionManagement({
       <a className="skip-link" href="#questions-content">
         Skip to content
       </a>
-      <header className="setup-header">
+      <PageHeader>
         <button className="brand setup-brand" onClick={onBack}>
           <img src={brandIcon} alt="" />
           <span>
@@ -224,7 +230,7 @@ export default function QuestionManagement({
             Sign out
           </button>
         </nav>
-      </header>
+      </PageHeader>
       <main id="questions-content" className="setup-content">
         <div className="page-heading">
           <div>

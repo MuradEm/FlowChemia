@@ -1,3 +1,4 @@
+import { useEmbeddedWorkspace } from "./WorkspaceContext";
 import ProfilePhoto from "./ProfilePhoto";
 import type { PhotoScope } from "./api";
 import CompanyTestBanner from "./CompanyTestBanner";
@@ -111,152 +112,162 @@ export default function EmployeeHome(props: Props) {
     onExit,
   } = props;
   const demo = mode === "demo";
+  const embedded = useEmbeddedWorkspace();
   const [activeSection, setActiveSection] = useState("home");
   const helpDialog = useRef<HTMLDialogElement>(null);
   const completed = closed.filter((a) => a.outcome === "COMPLETED");
   const skipped = closed.filter((a) => a.outcome === "SKIPPED");
 
   return (
-    <div className="app-shell">
+    <div className={embedded ? "embedded-home" : "app-shell"}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <aside className="sidebar" aria-label="Workspace sidebar">
-        <a
-          className="brand"
-          href="#home"
-          aria-label="FlowChemia home"
-          onClick={() => setActiveSection("home")}
-        >
-          <img src={brandIcon} alt="" />
-          <span>
-            Flow<span>Chemia</span>
-          </span>
-        </a>
-        <div className="workspace-label">
-          <span className="workspace-icon">
-            <Icon name="building" />
-          </span>
-          <div>
-            <strong>{companyName}</strong>
-            <span>{demo ? "Demo workspace" : "Your company"}</span>
-          </div>
-        </div>
-        <p className="sidebar-caption">MY WORKSPACE</p>
-        <nav aria-label="Main navigation">
-          {navigation.map((item) => (
-            <a
-              key={item.id}
-              className={`nav-item ${activeSection === item.id ? "active" : ""}`}
-              aria-current={activeSection === item.id ? "location" : undefined}
-              href={`#${item.id}`}
-              onClick={() => setActiveSection(item.id)}
-            >
-              <Icon name={item.icon} />
-              <span>{item.name}</span>
-              {item.id === "surveys" && open.length > 0 && (
-                <span className="nav-count">{open.length}</span>
-              )}
-            </a>
-          ))}
-          {props.onProfile && (
-            <button className="nav-item" onClick={props.onProfile}>
-              <Icon name="camera" />
-              <span>My profile</span>
-            </button>
-          )}
-          {props.onPeople && (
-            <button className="nav-item" onClick={props.onPeople}>
-              <Icon name="people" />
-              <span>People</span>
-            </button>
-          )}
-          {onCompanySetup && (
-            <button className="nav-item" onClick={onCompanySetup}>
-              <Icon name="building" />
-              <span>Company setup</span>
-            </button>
-          )}
-          {onSurveySettings && (
-            <button className="nav-item" onClick={onSurveySettings}>
-              <Icon name="survey" />
-              <span>Survey settings</span>
-            </button>
-          )}
-          {onTeams && (
-            <button className="nav-item" onClick={onTeams}>
-              <Icon name="people" />
-              <span>My teams</span>
-            </button>
-          )}
-          {onQuestions && (
-            <button className="nav-item" onClick={onQuestions}>
-              <Icon name="survey" />
-              <span>Question management</span>
-            </button>
-          )}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <Icon name="leaf" />
-            <p>
-              Better teams start with
-              <br />
-              <strong>understanding each other.</strong>
-            </p>
-          </div>
-          <button
-            className="help-button"
-            onClick={() => helpDialog.current?.showModal()}
+      {!embedded && (
+        <aside className="sidebar" aria-label="Workspace sidebar">
+          <a
+            className="brand"
+            href="#home"
+            aria-label="FlowChemia home"
+            onClick={() => setActiveSection("home")}
           >
-            <Icon name="help" /> How FlowChemia works <Icon name="chevron" />
-          </button>
-        </div>
-      </aside>
-
-      <div className="workspace-main" id="home">
-        <header className="topbar">
-          <div className="breadcrumb">
-            My workspace <span>/</span> <strong>Overview</strong>
-          </div>
-          <div className="topbar-right">
-            {demo ? (
-              <span className="demo-badge">
-                <span /> Demo data
-              </span>
-            ) : (
-              <span className="live-badge">
-                <Icon name="shield" /> Signed in
-              </span>
-            )}
-            {onSwitchCompany && (
-              <button className="text-button" onClick={onSwitchCompany}>
-                Switch company
-              </button>
-            )}
-            <button className="text-button" onClick={onExit}>
-              {demo ? "Back to login" : "Sign out"}
-            </button>
-            <span className="topbar-divider" />
-            <div className="user-profile">
-              {props.profilePhoto ? (
-                <ProfilePhoto
-                  name={displayName}
-                  {...props.profilePhoto}
-                  className="topbar-profile-photo"
-                />
-              ) : (
-                <span className="avatar small user-avatar">
-                  {initials(displayName)}
-                </span>
-              )}
-              <div>
-                <strong>{displayName}</strong>
-                <span>{demo ? "Employee · sample profile" : roleLabel}</span>
-              </div>
+            <img src={brandIcon} alt="" />
+            <span>
+              Flow<span>Chemia</span>
+            </span>
+          </a>
+          <div className="workspace-label">
+            <span className="workspace-icon">
+              <Icon name="building" />
+            </span>
+            <div>
+              <strong>{companyName}</strong>
+              <span>{demo ? "Demo workspace" : "Your company"}</span>
             </div>
           </div>
-        </header>
+          <p className="sidebar-caption">MY WORKSPACE</p>
+          <nav aria-label="Main navigation">
+            {navigation.map((item) => (
+              <a
+                key={item.id}
+                className={`nav-item ${activeSection === item.id ? "active" : ""}`}
+                aria-current={
+                  activeSection === item.id ? "location" : undefined
+                }
+                href={`#${item.id}`}
+                onClick={() => setActiveSection(item.id)}
+              >
+                <Icon name={item.icon} />
+                <span>{item.name}</span>
+                {item.id === "surveys" && open.length > 0 && (
+                  <span className="nav-count">{open.length}</span>
+                )}
+              </a>
+            ))}
+            {props.onProfile && (
+              <button className="nav-item" onClick={props.onProfile}>
+                <Icon name="camera" />
+                <span>My profile</span>
+              </button>
+            )}
+            {props.onPeople && (
+              <button className="nav-item" onClick={props.onPeople}>
+                <Icon name="people" />
+                <span>People</span>
+              </button>
+            )}
+            {onCompanySetup && (
+              <button className="nav-item" onClick={onCompanySetup}>
+                <Icon name="building" />
+                <span>Company setup</span>
+              </button>
+            )}
+            {onSurveySettings && (
+              <button className="nav-item" onClick={onSurveySettings}>
+                <Icon name="survey" />
+                <span>Survey settings</span>
+              </button>
+            )}
+            {onTeams && (
+              <button className="nav-item" onClick={onTeams}>
+                <Icon name="people" />
+                <span>My teams</span>
+              </button>
+            )}
+            {onQuestions && (
+              <button className="nav-item" onClick={onQuestions}>
+                <Icon name="survey" />
+                <span>Question management</span>
+              </button>
+            )}
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="sidebar-note">
+              <Icon name="leaf" />
+              <p>
+                Better teams start with
+                <br />
+                <strong>understanding each other.</strong>
+              </p>
+            </div>
+            <button
+              className="help-button"
+              onClick={() => helpDialog.current?.showModal()}
+            >
+              <Icon name="help" /> How FlowChemia works <Icon name="chevron" />
+            </button>
+          </div>
+        </aside>
+      )}
+
+      <div
+        className={embedded ? "embedded-home-content" : "workspace-main"}
+        id="home"
+      >
+        {!embedded && (
+          <header className="topbar">
+            <div className="breadcrumb">
+              My workspace <span>/</span> <strong>Overview</strong>
+            </div>
+            <div className="topbar-right">
+              {demo ? (
+                <span className="demo-badge">
+                  <span /> Demo data
+                </span>
+              ) : (
+                <span className="live-badge">
+                  <Icon name="shield" /> Signed in
+                </span>
+              )}
+              {onSwitchCompany && (
+                <button className="text-button" onClick={onSwitchCompany}>
+                  Switch company
+                </button>
+              )}
+              <button className="text-button" onClick={onExit}>
+                {demo ? "Back to login" : "Sign out"}
+              </button>
+              <span className="topbar-divider" />
+              <div className="user-profile">
+                {props.profilePhoto ? (
+                  <ProfilePhoto
+                    name={displayName}
+                    {...props.profilePhoto}
+                    className="topbar-profile-photo"
+                  />
+                ) : (
+                  <span className="avatar small user-avatar">
+                    {initials(displayName)}
+                  </span>
+                )}
+                <div>
+                  <strong>{displayName}</strong>
+                  <span>{demo ? "Employee · sample profile" : roleLabel}</span>
+                </div>
+              </div>
+            </div>
+          </header>
+        )}
 
         <main id="main-content">
           <div className="page-heading">

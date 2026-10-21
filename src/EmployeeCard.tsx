@@ -71,11 +71,17 @@ export function EmployeeCardContent({
   photoScope?: PhotoScope;
 }) {
   const role =
-    employee.role === "MANAGER"
-      ? "Manager"
-      : employee.role === "TEAM_LEADER"
-        ? "Team leader"
-        : "Team participant";
+    employee.role === "HR_ADMIN"
+      ? "HR administrator"
+      : employee.role === "OWNER"
+        ? "Company owner"
+        : employee.role === "MANAGER"
+          ? "Manager"
+          : employee.role === "TEAM_LEADER"
+            ? "Team leader"
+            : employee.isYou
+              ? "Employee"
+              : "Team participant";
   const observed =
     employee.skills?.filter((s) => s.indicator.reports > 0) ?? [];
   return (

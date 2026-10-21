@@ -391,3 +391,55 @@ test("employee profile and photo actions keep company scope and separate work in
   assert.equal(calls[5].method, "DELETE");
   assert.equal(calls[5].body, undefined);
 });
+
+test("team builder and personal card requests preserve scope, selected identities and replayable save payloads", async () => {
+  const {
+    getOwnCard,
+    getBuilderCapabilities,
+    getBuilderCatalog,
+    previewBuilder,
+    saveBuilder,
+  } = await import("../src/api.ts");
+  const calls = [],
+    body = {
+      requestId: "same-request",
+      name: "PLC",
+      startsAt: "2026-10-21T09:00:00Z",
+      endsAt: null,
+      membershipIds: ["alice", "bob"],
+      managerIds: ["manager"],
+      leaderIds: ["alice"],
+    };
+  await withFetch(
+    async (path, options) => {
+      calls.push({ path, ...options });
+      return json({});
+    },
+    async () => {
+      await getOwnCard("token", "company");
+      await getBuilderCapabilities("token", "company");
+      await getBuilderCatalog("token", "company", "team");
+      await previewBuilder("token", "company", ["alice", "bob"], "alice");
+      await saveBuilder("token", "company", body);
+      await saveBuilder("token", "company", body);
+    },
+  );
+  assert.ok(
+    calls.every(
+      (c) =>
+        c.path.startsWith("/api/organizations/company/") &&
+        c.headers.Authorization === "Bearer token",
+    ),
+  );
+  assert.equal(calls[0].path, "/api/organizations/company/my-card");
+  assert.equal(
+    calls[2].path,
+    "/api/organizations/company/team-builder?teamId=team",
+  );
+  assert.deepEqual(JSON.parse(calls[3].body), {
+    membershipIds: ["alice", "bob"],
+    focus: "alice",
+  });
+  assert.equal(calls[4].body, calls[5].body);
+  assert.deepEqual(JSON.parse(calls[4].body), body);
+});
