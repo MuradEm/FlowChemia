@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import type { RefObject } from "react";
 
 type Edge = { to: string; state: string; path: string };
@@ -9,6 +9,7 @@ export default function FocusConnections({
   container: RefObject<HTMLDivElement | null>;
   from: string;
 }) {
+  const markerId = useId();
   const [drawing, setDrawing] = useState<{
     width: number;
     height: number;
@@ -22,15 +23,18 @@ export default function FocusConnections({
       if (!source) return;
       const bounds = root!.getBoundingClientRect(),
         card = source.getBoundingClientRect();
-      const edges = [
+      const targets = [
         ...root!.querySelectorAll<HTMLElement>("[data-relationship-to]"),
-      ].map((target) => {
+      ];
+      const edges = targets.map((target, index) => {
         const peer = target.getBoundingClientRect();
         const stacked = peer.top >= card.bottom && peer.left < card.right;
         const x = stacked ? 12 : card.right - bounds.left;
         const y = stacked
           ? card.bottom - bounds.top
-          : card.top - bounds.top + Math.min(card.height / 2, 220);
+          : card.top -
+            bounds.top +
+            (card.height * (index + 1)) / (targets.length + 1);
         const endX = peer.left - bounds.left,
           endY = peer.top - bounds.top + peer.height / 2;
         return {
@@ -48,8 +52,18 @@ export default function FocusConnections({
     root
       .querySelectorAll(".employee-card, .relationship-card")
       .forEach((node) => observer.observe(node));
+    const mutations = new MutationObserver(measure);
+    mutations.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-relationship-state", "data-relationship-to"],
+    });
     measure();
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      mutations.disconnect();
+    };
   }, [container, from]);
   if (!drawing) return null;
   return (
@@ -58,11 +72,33 @@ export default function FocusConnections({
       viewBox={`0 0 ${drawing.width} ${drawing.height}`}
       aria-hidden="true"
     >
+      <defs>
+        <marker
+          id={markerId}
+          viewBox="0 0 12 12"
+          refX="6"
+          refY="6"
+          markerWidth="12"
+          markerHeight="12"
+          markerUnits="userSpaceOnUse"
+        >
+          <circle
+            cx="6"
+            cy="6"
+            r="5"
+            fill="context-stroke"
+            stroke="white"
+            strokeWidth="2"
+          />
+        </marker>
+      </defs>
       {drawing.edges.map((edge) => (
         <path
           key={edge.to}
           className={`connection-${edge.state.toLowerCase()}`}
           d={edge.path}
+          markerStart={`url(#${markerId})`}
+          markerEnd={`url(#${markerId})`}
           data-connection-from={from}
           data-connection-to={edge.to}
         />

@@ -266,7 +266,7 @@ selection work without hover-only information.
 
 The API calculates and stores skill and directional relationship estimates;
 the frontend receives qualitative labels, icons and evidence context only.
-Unknown, early and older feedback remain neutral. Reported enjoyment and
+Unknown feedback stays neutral. Early and older feedback shows its current colour with an evidence icon. Reported enjoyment and
 collaboration effectiveness remain separate, and the combined connection describes
 reported effectiveness only when both directions have observations. Cards don't
 invent job titles, photos, rankings or overall employee scores.
@@ -386,8 +386,7 @@ Compact team cards display every configured skill. Authorized team insight views
 red below 20, orange from 20, yellow from 40, light green from 60 and strong green
 from 80 through 100. Only the categorical band is returned by the API, never the
 exact score. Employee personal views show a coloured dot and standard text:
-“Room for improvement”, “On the way” or “Doing well”. Unobserved, early and older
-feedback remain neutral, without a rated band. Selecting a card expands it and
+“Room for improvement”, “On the way” or “Doing well”. Unobserved feedback remains neutral. Early and older feedback retains its colour with an evidence icon. Selecting a card expands it and
 shows relationships only for that employee; existing visibility rules still apply.
 No migration or new dependency is required for the band display; update and restart
 both repositories so the API can supply bands and presentation capabilities.
@@ -425,3 +424,10 @@ whole-team number. Individual scores remain hidden. Candidate labels distinguish
 unknown chemistry from poor fit. These are feedback-based signals rather than
 calibrated probabilities. Update and restart both repositories; this release adds
 no migration or dependency.
+
+The team builder uses a chemistry canvas: focus an employee on the left to see
+coloured connections to selected teammates, with directional experiences in
+expandable details. Team analysis and draggable, ranked candidates stay on the
+right; setup fields are below. Skill bars remain visible. Evidence icons explain
+provisional/older colours on hover or keyboard focus. Actual feedback appears
+without waiting for the maturity threshold; missing feedback stays neutral.

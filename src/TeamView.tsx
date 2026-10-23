@@ -351,7 +351,10 @@ export default function TeamView({
                               p.secondMembershipId,
                             ].includes(selected.membershipId),
                         );
-                        const state = pair?.combined?.state ?? "UNKNOWN";
+                        const state =
+                          pair?.combined?.tone ??
+                          pair?.combined?.state ??
+                          "UNKNOWN";
                         return (
                           <div
                             className="connected-colleague"

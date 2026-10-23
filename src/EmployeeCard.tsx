@@ -8,7 +8,7 @@ import ProfilePhoto from "./ProfilePhoto";
 import { Icon } from "./Icon";
 
 const bands: SkillBand[] = ["RED", "ORANGE", "YELLOW", "LIGHT_GREEN", "GREEN"];
-function SkillDisplay({
+export function SkillDisplay({
   value,
   summary,
 }: {
@@ -37,14 +37,35 @@ function SkillDisplay({
         <span className="skill-band-label">
           <span className="skill-band-dot" aria-hidden="true" />
           {value.label}
+          <EvidenceHint value={value} />
         </span>
       )}
     </div>
   );
 }
-export function Indicator({ value }: { value: InsightIndicator }) {
+export function EvidenceHint({
+  value,
+}: {
+  value: Pick<InsightIndicator, "state" | "reports" | "reviewers">;
+}) {
+  if (!["EARLY", "OLDER"].includes(value.state)) return null;
+  const text =
+    value.state === "OLDER"
+      ? "Older feedback: this colour may no longer reflect recent experience."
+      : `Limited feedback: ${value.reports} weekly observation${value.reports === 1 ? "" : "s"} from ${value.reviewers} colleague${value.reviewers === 1 ? "" : "s"}. This colour is provisional.`;
   return (
-    <span className={`insight-indicator insight-${value.state.toLowerCase()}`}>
+    <span className="evidence-hint" tabIndex={0} role="img" aria-label={text}>
+      <span aria-hidden="true">ⓘ</span>
+      <span className="evidence-tooltip" aria-hidden="true">
+        {text}
+      </span>
+    </span>
+  );
+}
+export function Indicator({ value }: { value: InsightIndicator }) {
+  const tone = value.tone ?? value.state;
+  return (
+    <span className={`insight-indicator insight-${tone.toLowerCase()}`}>
       <span aria-hidden="true" className="insight-symbol">
         {
           {
@@ -54,10 +75,11 @@ export function Indicator({ value }: { value: InsightIndicator }) {
             UNKNOWN: "?",
             EARLY: "◷",
             OLDER: "◷",
-          }[value.state]
+          }[tone]
         }
       </span>
       {value.label}
+      <EvidenceHint value={value} />
     </span>
   );
 }

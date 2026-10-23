@@ -479,6 +479,7 @@ export const pauseAutomaticSurveys = (token: string, org: string) =>
 
 export type SkillBand = "RED" | "ORANGE" | "YELLOW" | "LIGHT_GREEN" | "GREEN";
 export type InsightIndicator = {
+  tone?: "UNKNOWN" | "POSITIVE" | "MIXED" | "DIFFICULT";
   band?: SkillBand | null;
   state: "UNKNOWN" | "EARLY" | "OLDER" | "POSITIVE" | "MIXED" | "DIFFICULT";
   label: string;
@@ -744,6 +745,7 @@ export type TeamAnalysis = {
   visiblePairs: number;
 };
 export type FitRecommendation = {
+  limitedEvidence?: boolean;
   membershipId: string;
   fit: "STRONG" | "GOOD" | "MIXED" | "CAUTION" | "UNKNOWN";
   label: string;

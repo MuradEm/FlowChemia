@@ -14,7 +14,7 @@ import type {
   Session,
   RelationshipInsight,
 } from "./api";
-import { EmployeeCardContent, Indicator } from "./EmployeeCard";
+import { EmployeeCardContent, Indicator, SkillDisplay } from "./EmployeeCard";
 import TeamChemistry from "./TeamChemistry";
 import type { BuilderPreview } from "./api";
 import type { DragEvent } from "react";
@@ -420,6 +420,477 @@ export default function TeamBuilder({
         {loading && <p role="status">Loading team builder…</p>}
         {catalog && (
           <>
+            {catalog.hasHiddenParticipants && (
+              <p className="auth-error" role="alert">
+                This team includes unavailable participants. Resolve its roster
+                in Company setup before saving it here.
+              </p>
+            )}
+            <div
+              className="builder-view-switch"
+              role="group"
+              aria-label="Team view"
+            >
+              <button
+                className={!focus ? "active" : ""}
+                aria-pressed={!focus}
+                onClick={() => setFocus(undefined)}
+              >
+                <Icon name="people" />
+                Team overview
+              </button>
+              <button
+                className={focus ? "active" : ""}
+                aria-pressed={!!focus}
+                disabled={!selected.length}
+                onClick={() => setFocus(focus ?? selected[0]?.membershipId)}
+              >
+                <Icon name="spark" />
+                Focus employee
+              </button>
+            </div>
+            <div className="builder-workspace">
+              <section
+                className={`builder-selection ${dragging ? "drop-ready" : ""}`}
+                onDragOver={allowDrop}
+                onDrop={(e) => drop(e, true)}
+                aria-labelledby="builder-selected"
+              >
+                <div className="section-heading">
+                  <div>
+                    <h2 id="builder-selected">
+                      Team chemistry view{" "}
+                      <span className="count-pill">{selected.length}</span>
+                    </h2>
+                    <p>
+                      {focus
+                        ? "Only connections involving the selected employee are shown."
+                        : "Choose a card to review that employee’s chemistry."}
+                    </p>
+                  </div>
+                </div>
+                {previewLoading && (
+                  <p className="setup-note" role="status">
+                    Updating draft insights…
+                  </p>
+                )}
+                {previewError && (
+                  <p className="auth-error" role="alert">
+                    {previewError}
+                  </p>
+                )}
+                {selected.length === 0 ? (
+                  <div className="setup-panel empty-state lineup-empty">
+                    <Icon name="people" />
+                    <h3>Build your lineup</h3>
+                    <p>
+                      Select employees from the list. Nothing is saved until you
+                      save the team.
+                    </p>
+                  </div>
+                ) : selectedPerson ? (
+                  <div className="employee-focus" ref={layout}>
+                    <FocusConnections
+                      container={layout}
+                      from={selectedPerson.membershipId}
+                    />
+                    <article
+                      className="employee-card selected-employee"
+                      draggable={!disabled}
+                      onDragStart={(event) =>
+                        dragCard(event, selectedPerson.membershipId)
+                      }
+                      onDragEnd={() => setDragging(null)}
+                      data-selected-id={selectedPerson.membershipId}
+                    >
+                      <span className="focus-employee-badge">
+                        <Icon name="spark" />
+                        Focus employee
+                      </span>
+                      <EmployeeCardContent
+                        employee={selectedPerson}
+                        photoScope={scope}
+                        expanded
+                      />
+                      <button
+                        className="text-button"
+                        disabled={disabled}
+                        onClick={() => toggle(selectedPerson.membershipId)}
+                      >
+                        Remove from draft
+                      </button>
+                    </article>
+                    <div className="focused-colleagues">
+                      {selected
+                        .filter((e) => e.membershipId !== focus)
+                        .map((e) => {
+                          const pair = preview?.relationships.find(
+                            (p) =>
+                              [
+                                p.firstMembershipId,
+                                p.secondMembershipId,
+                              ].includes(e.membershipId) &&
+                              [
+                                p.firstMembershipId,
+                                p.secondMembershipId,
+                              ].includes(focus!),
+                          );
+                          const name = (id: string) =>
+                            selected.find((x) => x.membershipId === id)
+                              ?.displayName ?? "Colleague";
+                          return (
+                            <div
+                              className="connected-colleague"
+                              key={e.membershipId}
+                            >
+                              <article
+                                className="relationship-card"
+                                data-relationship-to={
+                                  pair ? e.membershipId : undefined
+                                }
+                                data-relationship-state={
+                                  pair?.combined?.tone ??
+                                  pair?.combined?.state ??
+                                  "UNKNOWN"
+                                }
+                              >
+                                <div className="relationship-person">
+                                  <ProfilePhoto
+                                    name={e.displayName}
+                                    membershipId={e.membershipId}
+                                    scope={scope}
+                                    version={e.profile?.photoUpdatedAt}
+                                    className="relationship-photo"
+                                  />
+                                  <div>
+                                    <button
+                                      className="colleague-focus-button"
+                                      onClick={() => setFocus(e.membershipId)}
+                                    >
+                                      {e.displayName} →
+                                    </button>
+                                    <p>
+                                      {e.profile?.jobTitle ||
+                                        "Team participant"}
+                                    </p>
+                                    {e.profile?.department && (
+                                      <small>{e.profile.department}</small>
+                                    )}
+                                  </div>
+                                  <button
+                                    className="icon-button"
+                                    aria-label={`Remove ${e.displayName} from draft`}
+                                    disabled={disabled}
+                                    onClick={() => toggle(e.membershipId)}
+                                  >
+                                    <Icon name="close" />
+                                  </button>
+                                </div>
+                                {pair ? (
+                                  <>
+                                    <div className="combined-summary">
+                                      <span>Reported collaboration</span>
+                                      {pair.combined ? (
+                                        <Indicator value={pair.combined} />
+                                      ) : (
+                                        <span className="relationship-note">
+                                          {pair.visibility === "OWN_EXPERIENCE"
+                                            ? "Your experience only"
+                                            : "Not observed in both directions"}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <details className="relationship-directions">
+                                      <summary>Individual experiences</summary>
+                                      <Experience
+                                        name={name(pair.firstMembershipId)}
+                                        value={pair.firstToSecond}
+                                      />
+                                      <Experience
+                                        name={name(pair.secondMembershipId)}
+                                        value={pair.secondToFirst}
+                                      />
+                                    </details>
+                                  </>
+                                ) : (
+                                  <p className="setup-note">
+                                    {previewLoading
+                                      ? "Loading relationship…"
+                                      : "Relationship details are outside your current access for this pair."}
+                                  </p>
+                                )}
+                                {e.skills && (
+                                  <div className="relationship-skills">
+                                    {e.skills.slice(0, 2).map((skill) => (
+                                      <div key={skill.id}>
+                                        <span>{skill.name}</span>
+                                        <SkillDisplay
+                                          value={skill.indicator}
+                                          summary={
+                                            e.skillPresentation === "SUMMARY"
+                                          }
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </article>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="employee-grid builder-lineup">
+                    {selected.map((e) => (
+                      <article
+                        className="employee-card lineup-player-card"
+                        key={e.membershipId}
+                        draggable={!disabled}
+                        onDragStart={(event) => dragCard(event, e.membershipId)}
+                        onDragEnd={() => setDragging(null)}
+                        data-selected-id={e.membershipId}
+                      >
+                        <EmployeeCardContent employee={e} photoScope={scope} />
+                        {!e.skills && (
+                          <p className="setup-note">
+                            Skill feedback is outside your current access.
+                          </p>
+                        )}
+                        <div className="builder-card-actions">
+                          <button
+                            className="text-button"
+                            onClick={() => setFocus(e.membershipId)}
+                          >
+                            Focus on {e.displayName}
+                          </button>
+                          <button
+                            className="icon-button"
+                            aria-label={`Remove ${e.displayName} from draft`}
+                            disabled={disabled}
+                            onClick={() => toggle(e.membershipId)}
+                          >
+                            <Icon name="close" />
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+              <div className="builder-sidebar">
+                <div className="builder-insights-heading">
+                  <Icon name="activity" />
+                  <div>
+                    <h2>Team chemistry analysis</h2>
+                    <p>Insights for the selected team.</p>
+                  </div>
+                </div>
+                <TeamChemistry
+                  value={preview?.teamAnalysis}
+                  loading={
+                    !preview?.teamAnalysis &&
+                    (previewLoading ||
+                      (selected.length > 0 && !preview && !previewError))
+                  }
+                  error={previewError}
+                />
+                <aside
+                  onDragOver={allowDrop}
+                  onDrop={(e) => drop(e, false)}
+                  className={`setup-panel builder-candidates ${dragging ? "drop-ready" : ""}`}
+                  aria-labelledby="builder-find"
+                >
+                  <h2 id="builder-find">Suggested employees</h2>
+                  <p className="candidate-ranking-note">
+                    Best fit first · feedback-based guidance
+                  </p>
+                  <details className="candidate-filters">
+                    <summary>Search & filters</summary>
+                    <label htmlFor="builder-search">Name or job title</label>
+                    <input
+                      id="builder-search"
+                      type="search"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Find a colleague"
+                    />
+                    <label htmlFor="builder-department">Department</label>
+                    <select
+                      id="builder-department"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                    >
+                      <option value="">All departments</option>
+                      {[
+                        ...new Set(
+                          employees
+                            .map((e) => e.profile?.department)
+                            .filter((d): d is string => !!d),
+                        ),
+                      ]
+                        .sort()
+                        .map((d) => (
+                          <option key={d}>{d}</option>
+                        ))}
+                    </select>
+                    <label htmlFor="builder-skill">
+                      Has current skill feedback
+                    </label>
+                    <select
+                      id="builder-skill"
+                      value={skillFilter}
+                      onChange={(e) => setSkillFilter(e.target.value)}
+                    >
+                      <option value="">Any skill</option>
+                      {skills.map((s) => (
+                        <option value={s.id} key={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </details>
+                  <p className="candidate-drag-hint">
+                    Drag a card onto the lineup, or use Add. Drag a selected
+                    player back here to remove them.
+                  </p>
+                  <div className="builder-candidate-list">
+                    {filtered.map((e) => {
+                      const fit = recommendations.get(e.membershipId);
+                      return (
+                        <article
+                          className="candidate-player-card"
+                          key={e.membershipId}
+                          draggable={!disabled}
+                          onDragStart={(event) =>
+                            dragCard(event, e.membershipId)
+                          }
+                          onDragEnd={() => setDragging(null)}
+                          data-candidate-id={e.membershipId}
+                        >
+                          <div className="candidate-player-identity">
+                            <ProfilePhoto
+                              name={e.displayName}
+                              membershipId={e.membershipId}
+                              scope={scope}
+                              version={e.profile?.photoUpdatedAt}
+                              className="builder-candidate-photo"
+                            />
+                            <div>
+                              <strong>{e.displayName}</strong>
+                              <small>{e.profile?.jobTitle || "Employee"}</small>
+                            </div>
+                            <span className="drag-grip" aria-hidden="true">
+                              ⠿
+                            </span>
+                          </div>
+                          <div className="candidate-player-footer">
+                            <span
+                              className={`fit-chip fit-${fit?.fit.toLowerCase() ?? "unknown"}`}
+                              title={fit?.reasons.join(" ")}
+                            >
+                              {previewLoading && !fit
+                                ? "Checking fit…"
+                                : (fit?.label ?? "Not enough evidence")}
+                            </span>
+                            {fit?.limitedEvidence && (
+                              <span
+                                className="evidence-hint"
+                                tabIndex={0}
+                                role="img"
+                                aria-label="Limited feedback: this fit suggestion is provisional."
+                              >
+                                <span aria-hidden="true">ⓘ</span>
+                                <span
+                                  className="evidence-tooltip"
+                                  aria-hidden="true"
+                                >
+                                  Limited feedback: this fit suggestion is
+                                  provisional.
+                                </span>
+                              </span>
+                            )}
+                            <button
+                              className="candidate-add-button"
+                              disabled={
+                                disabled || draft.selected.length >= 100
+                              }
+                              aria-label={`Add ${e.displayName} to team`}
+                              onClick={() => move(e.membershipId, true)}
+                            >
+                              Add <span aria-hidden="true">+</span>
+                            </button>
+                          </div>
+                          <small className="candidate-evidence">
+                            {fit?.possibleLinks
+                              ? `${fit.knownLinks} of ${fit.possibleLinks} reported connections`
+                              : "Select teammates to compare chemistry"}
+                          </small>
+                        </article>
+                      );
+                    })}
+                    {filtered.length === 0 && (
+                      <p className="setup-note">
+                        No employees match these filters.
+                      </p>
+                    )}
+                  </div>
+                  <p className="setup-note">
+                    HR stays independent. People can belong to several teams.
+                  </p>
+                  {employees.length === 200 && (
+                    <p className="setup-note">
+                      Showing the first 200 eligible employees.
+                    </p>
+                  )}
+                </aside>
+              </div>
+              <details className="setup-panel builder-analysis">
+                <summary>Skill coverage & evidence</summary>
+                <p>
+                  Feedback is a starting point. Use your knowledge of the people
+                  and the project alongside it.
+                </p>
+                <h3>Skill evidence</h3>
+                {skills.map((s) => {
+                  const known = selected
+                    .map((e) => e.skills?.find((x) => x.id === s.id)?.indicator)
+                    .filter((x) => x?.band);
+                  const positive = known.filter(
+                    (x) => x?.band === "GREEN" || x?.band === "LIGHT_GREEN",
+                  ).length;
+                  return (
+                    <div className="builder-skill-context" key={s.id}>
+                      <strong>{s.name}</strong>
+                      <span>
+                        {positive
+                          ? `${positive} with positive feedback`
+                          : known.length
+                            ? "Mixed or developing feedback"
+                            : "No feedback in your view"}
+                      </span>
+                    </div>
+                  );
+                })}
+                {skills.length === 0 && (
+                  <p className="setup-note">
+                    No skill feedback is visible in your current role.
+                  </p>
+                )}
+                <p className="setup-note">
+                  Unknown chemistry is neutral. Draft selections do not grant
+                  access to additional feedback. Your own relationships show
+                  only your experience.
+                </p>
+              </details>
+            </div>
+            <div className="builder-project-heading">
+              <Icon name="building" />
+              <div>
+                <h2>Team setup</h2>
+                <p>Define the team details and responsibilities.</p>
+              </div>
+            </div>
             <section
               className="setup-panel builder-details"
               aria-label="Team details"
@@ -474,375 +945,6 @@ export default function TeamBuilder({
                 />
               </div>
             </section>
-            {catalog.hasHiddenParticipants && (
-              <p className="auth-error" role="alert">
-                This team includes unavailable participants. Resolve its roster
-                in Company setup before saving it here.
-              </p>
-            )}
-            <div className="builder-workspace">
-              <section
-                className={`builder-selection ${dragging ? "drop-ready" : ""}`}
-                onDragOver={allowDrop}
-                onDrop={(e) => drop(e, true)}
-                aria-labelledby="builder-selected"
-              >
-                <TeamChemistry
-                  value={preview?.teamAnalysis}
-                  loading={
-                    !preview?.teamAnalysis &&
-                    (previewLoading ||
-                      (selected.length > 0 && !preview && !previewError))
-                  }
-                  error={previewError}
-                />
-                <div className="section-heading">
-                  <div>
-                    <h2 id="builder-selected">
-                      Selected team{" "}
-                      <span className="count-pill">{selected.length}</span>
-                    </h2>
-                    <p>
-                      {focus
-                        ? "Only connections involving the selected employee are shown."
-                        : "Choose a card to review that employee’s chemistry."}
-                    </p>
-                  </div>
-                  {focus && (
-                    <button
-                      className="text-button"
-                      onClick={() => setFocus(undefined)}
-                    >
-                      Team overview
-                    </button>
-                  )}
-                </div>
-                {previewLoading && (
-                  <p className="setup-note" role="status">
-                    Updating draft insights…
-                  </p>
-                )}
-                {previewError && (
-                  <p className="auth-error" role="alert">
-                    {previewError}
-                  </p>
-                )}
-                {selected.length === 0 ? (
-                  <div className="setup-panel empty-state lineup-empty">
-                    <Icon name="people" />
-                    <h3>Build your lineup</h3>
-                    <p>
-                      Select employees from the list. Nothing is saved until you
-                      save the team.
-                    </p>
-                  </div>
-                ) : selectedPerson ? (
-                  <div className="employee-focus" ref={layout}>
-                    <FocusConnections
-                      container={layout}
-                      from={selectedPerson.membershipId}
-                    />
-                    <article
-                      className="employee-card selected-employee"
-                      draggable={!disabled}
-                      onDragStart={(event) =>
-                        dragCard(event, selectedPerson.membershipId)
-                      }
-                      onDragEnd={() => setDragging(null)}
-                      data-selected-id={selectedPerson.membershipId}
-                    >
-                      <EmployeeCardContent
-                        employee={selectedPerson}
-                        photoScope={scope}
-                        expanded
-                      />
-                      <button
-                        className="text-button"
-                        disabled={disabled}
-                        onClick={() => toggle(selectedPerson.membershipId)}
-                      >
-                        Remove from draft
-                      </button>
-                    </article>
-                    <div className="focused-colleagues">
-                      {selected
-                        .filter((e) => e.membershipId !== focus)
-                        .map((e) => {
-                          const pair = preview?.relationships.find(
-                            (p) =>
-                              [
-                                p.firstMembershipId,
-                                p.secondMembershipId,
-                              ].includes(e.membershipId) &&
-                              [
-                                p.firstMembershipId,
-                                p.secondMembershipId,
-                              ].includes(focus!),
-                          );
-                          const name = (id: string) =>
-                            selected.find((x) => x.membershipId === id)
-                              ?.displayName ?? "Colleague";
-                          return (
-                            <div
-                              className="connected-colleague"
-                              key={e.membershipId}
-                            >
-                              <article
-                                className="relationship-card"
-                                data-relationship-to={
-                                  pair ? e.membershipId : undefined
-                                }
-                                data-relationship-state={
-                                  pair?.combined?.state ?? "UNKNOWN"
-                                }
-                              >
-                                <button
-                                  className="colleague-focus-button"
-                                  onClick={() => setFocus(e.membershipId)}
-                                >
-                                  {e.displayName} →
-                                </button>
-                                {pair ? (
-                                  <>
-                                    <div className="combined-summary">
-                                      <span>Reported collaboration</span>
-                                      {pair.combined ? (
-                                        <Indicator value={pair.combined} />
-                                      ) : (
-                                        <span className="relationship-note">
-                                          {pair.visibility === "OWN_EXPERIENCE"
-                                            ? "Your experience only"
-                                            : "Not observed in both directions"}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <Experience
-                                      name={name(pair.firstMembershipId)}
-                                      value={pair.firstToSecond}
-                                    />
-                                    <Experience
-                                      name={name(pair.secondMembershipId)}
-                                      value={pair.secondToFirst}
-                                    />
-                                  </>
-                                ) : (
-                                  <p className="setup-note">
-                                    {previewLoading
-                                      ? "Loading relationship…"
-                                      : "Relationship details are outside your current access for this pair."}
-                                  </p>
-                                )}
-                              </article>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="employee-grid builder-lineup">
-                    {selected.map((e) => (
-                      <article
-                        className="employee-card lineup-player-card"
-                        key={e.membershipId}
-                        draggable={!disabled}
-                        onDragStart={(event) => dragCard(event, e.membershipId)}
-                        onDragEnd={() => setDragging(null)}
-                        data-selected-id={e.membershipId}
-                      >
-                        <EmployeeCardContent employee={e} photoScope={scope} />
-                        {!e.skills && (
-                          <p className="setup-note">
-                            Skill feedback is outside your current access.
-                          </p>
-                        )}
-                        <div className="builder-card-actions">
-                          <button
-                            className="text-button"
-                            onClick={() => setFocus(e.membershipId)}
-                          >
-                            Focus on {e.displayName}
-                          </button>
-                          <button
-                            className="icon-button"
-                            aria-label={`Remove ${e.displayName} from draft`}
-                            disabled={disabled}
-                            onClick={() => toggle(e.membershipId)}
-                          >
-                            <Icon name="close" />
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-              <aside
-                onDragOver={allowDrop}
-                onDrop={(e) => drop(e, false)}
-                className={`setup-panel builder-candidates ${dragging ? "drop-ready" : ""}`}
-                aria-labelledby="builder-find"
-              >
-                <h2 id="builder-find">Suggested employees</h2>
-                <p className="candidate-ranking-note">
-                  Best fit first · feedback-based guidance
-                </p>
-                <details className="candidate-filters">
-                  <summary>Search & filters</summary>
-                  <label htmlFor="builder-search">Name or job title</label>
-                  <input
-                    id="builder-search"
-                    type="search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Find a colleague"
-                  />
-                  <label htmlFor="builder-department">Department</label>
-                  <select
-                    id="builder-department"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                  >
-                    <option value="">All departments</option>
-                    {[
-                      ...new Set(
-                        employees
-                          .map((e) => e.profile?.department)
-                          .filter((d): d is string => !!d),
-                      ),
-                    ]
-                      .sort()
-                      .map((d) => (
-                        <option key={d}>{d}</option>
-                      ))}
-                  </select>
-                  <label htmlFor="builder-skill">
-                    Has current skill feedback
-                  </label>
-                  <select
-                    id="builder-skill"
-                    value={skillFilter}
-                    onChange={(e) => setSkillFilter(e.target.value)}
-                  >
-                    <option value="">Any skill</option>
-                    {skills.map((s) => (
-                      <option value={s.id} key={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </details>
-                <p className="candidate-drag-hint">
-                  Drag a card onto the lineup, or use Add. Drag a selected
-                  player back here to remove them.
-                </p>
-                <div className="builder-candidate-list">
-                  {filtered.map((e) => {
-                    const fit = recommendations.get(e.membershipId);
-                    return (
-                      <article
-                        className="candidate-player-card"
-                        key={e.membershipId}
-                        draggable={!disabled}
-                        onDragStart={(event) => dragCard(event, e.membershipId)}
-                        onDragEnd={() => setDragging(null)}
-                        data-candidate-id={e.membershipId}
-                      >
-                        <div className="candidate-player-identity">
-                          <ProfilePhoto
-                            name={e.displayName}
-                            membershipId={e.membershipId}
-                            scope={scope}
-                            version={e.profile?.photoUpdatedAt}
-                            className="builder-candidate-photo"
-                          />
-                          <div>
-                            <strong>{e.displayName}</strong>
-                            <small>{e.profile?.jobTitle || "Employee"}</small>
-                          </div>
-                          <span className="drag-grip" aria-hidden="true">
-                            ⠿
-                          </span>
-                        </div>
-                        <div className="candidate-player-footer">
-                          <span
-                            className={`fit-chip fit-${fit?.fit.toLowerCase() ?? "unknown"}`}
-                            title={fit?.reasons.join(" ")}
-                          >
-                            {previewLoading && !fit
-                              ? "Checking fit…"
-                              : (fit?.label ?? "Not enough evidence")}
-                          </span>
-                          <button
-                            className="candidate-add-button"
-                            disabled={disabled || draft.selected.length >= 100}
-                            aria-label={`Add ${e.displayName} to team`}
-                            onClick={() => move(e.membershipId, true)}
-                          >
-                            Add <span aria-hidden="true">+</span>
-                          </button>
-                        </div>
-                        <small className="candidate-evidence">
-                          {fit?.possibleLinks
-                            ? `${fit.knownLinks} of ${fit.possibleLinks} established connections`
-                            : "Select teammates to compare chemistry"}
-                        </small>
-                      </article>
-                    );
-                  })}
-                  {filtered.length === 0 && (
-                    <p className="setup-note">
-                      No employees match these filters.
-                    </p>
-                  )}
-                </div>
-                <p className="setup-note">
-                  HR stays independent. People can belong to several teams.
-                </p>
-                {employees.length === 200 && (
-                  <p className="setup-note">
-                    Showing the first 200 eligible employees.
-                  </p>
-                )}
-              </aside>
-              <details className="setup-panel builder-analysis">
-                <summary>Skill coverage & evidence</summary>
-                <p>
-                  Feedback is a starting point. Use your knowledge of the people
-                  and the project alongside it.
-                </p>
-                <h3>Skill evidence</h3>
-                {skills.map((s) => {
-                  const known = selected
-                    .map((e) => e.skills?.find((x) => x.id === s.id)?.indicator)
-                    .filter((x) => x?.band);
-                  const positive = known.filter(
-                    (x) => x?.band === "GREEN" || x?.band === "LIGHT_GREEN",
-                  ).length;
-                  return (
-                    <div className="builder-skill-context" key={s.id}>
-                      <strong>{s.name}</strong>
-                      <span>
-                        {positive
-                          ? `${positive} with positive feedback`
-                          : known.length
-                            ? "Mixed or developing feedback"
-                            : "No established feedback in your view"}
-                      </span>
-                    </div>
-                  );
-                })}
-                {skills.length === 0 && (
-                  <p className="setup-note">
-                    No skill feedback is visible in your current role.
-                  </p>
-                )}
-                <p className="setup-note">
-                  Unknown chemistry is neutral. Draft selections do not grant
-                  access to additional feedback. Your own relationships show
-                  only your experience.
-                </p>
-              </details>
-            </div>
             <section className="setup-panel builder-roles">
               <h2>Team responsibilities</h2>
               <p>
