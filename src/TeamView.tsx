@@ -24,6 +24,11 @@ type Props = {
   onCompanySetup?: () => void;
   onProfile: (id: string, teamId: string) => void;
   initialTeam?: { id: string; focus?: string };
+  builder?: {
+    canCreate: boolean;
+    editableIds: string[];
+    onOpen: (id?: string) => void;
+  };
 };
 function Direction({
   name,
@@ -57,6 +62,7 @@ export default function TeamView({
   onCompanySetup,
   onProfile,
   initialTeam,
+  builder,
 }: Props) {
   const [teams, setTeams] = useState<TeamSummary[]>([]);
   const [teamId, setTeamId] = useState("");
@@ -170,13 +176,24 @@ export default function TeamView({
             </h1>
             <p>Understand the people behind the project.</p>
           </div>
-          <button
-            className="secondary-button"
-            disabled={loading}
-            onClick={() => void load(teamId, focus)}
-          >
-            <Icon name="refresh" /> Refresh team
-          </button>
+          <div className="team-page-actions">
+            {builder?.canCreate && (
+              <button
+                className="primary-button"
+                onClick={() => builder.onOpen()}
+              >
+                <Icon name="spark" />
+                Create team
+              </button>
+            )}
+            <button
+              className="secondary-button"
+              disabled={loading}
+              onClick={() => void load(teamId, focus)}
+            >
+              <Icon name="refresh" /> Refresh team
+            </button>
+          </div>
         </div>
         {data?.testMode && <CompanyTestBanner />}
         {teams.length > 0 && (
@@ -196,6 +213,16 @@ export default function TeamView({
                 ))}
               </select>
             </div>
+            {builder?.editableIds.includes(teamId) && (
+              <button
+                className="secondary-button"
+                disabled={loading}
+                onClick={() => builder.onOpen(teamId)}
+              >
+                <Icon name="spark" />
+                Edit in team builder
+              </button>
+            )}
             {selected && (
               <button
                 className="secondary-button"

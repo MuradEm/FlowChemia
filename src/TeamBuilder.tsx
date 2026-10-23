@@ -12,10 +12,12 @@ import type {
   EmployeeInsight,
   Membership,
   Session,
-  TeamInsights,
   RelationshipInsight,
 } from "./api";
 import { EmployeeCardContent, Indicator } from "./EmployeeCard";
+import TeamChemistry from "./TeamChemistry";
+import type { BuilderPreview } from "./api";
+import type { DragEvent } from "react";
 import ProfilePhoto from "./ProfilePhoto";
 import FocusConnections from "./FocusConnections";
 import { Icon } from "./Icon";
@@ -75,7 +77,9 @@ export default function TeamBuilder({
   membership,
   onExpired,
   onSaved,
+  initialTeamId,
 }: {
+  initialTeamId?: string;
   session: Session;
   membership: Membership;
   onExpired: () => void;
@@ -94,9 +98,10 @@ export default function TeamBuilder({
     [notice, setNotice] = useState(""),
     [uncertain, setUncertain] = useState(false);
   const [focus, setFocus] = useState<string>(),
-    [preview, setPreview] = useState<TeamInsights | null>(null),
+    [preview, setPreview] = useState<BuilderPreview | null>(null),
     [previewLoading, setPreviewLoading] = useState(false),
     [previewError, setPreviewError] = useState("");
+  const [dragging, setDragging] = useState<string | null>(null);
   const alive = useRef(false),
     request = useRef<AbortController | null>(null),
     lock = useRef(false),
@@ -158,17 +163,23 @@ export default function TeamBuilder({
   }
   useEffect(() => {
     alive.current = true;
-    void load();
+    void load(initialTeamId);
     return () => {
       alive.current = false;
       request.current?.abort();
     };
   }, []);
   const selectionKey = [...draft.selected].sort().join(",");
+  const previewSelection = useRef("");
   useEffect(() => {
-    setPreview(null);
+    if (previewSelection.current !== selectionKey) setPreview(null);
+    else
+      setPreview((previous) =>
+        previous ? { ...previous, relationships: [] } : null,
+      );
+    previewSelection.current = selectionKey;
     setPreviewError("");
-    if (!catalog || !draft.selected.length) {
+    if (!catalog) {
       setPreviewLoading(false);
       return;
     }
@@ -194,19 +205,65 @@ export default function TeamBuilder({
       c.abort();
     };
   }, [selectionKey, focus, catalog]);
-  function toggle(id: string) {
-    if (busy || uncertain || loading) return;
-    setDraft((d) => ({
-      ...d,
-      selected: d.selected.includes(id)
-        ? d.selected.filter((x) => x !== id)
-        : [...d.selected, id],
-      leaders: d.selected.includes(id)
-        ? d.leaders.filter((x) => x !== id)
-        : d.leaders,
-    }));
-    if (focus === id) setFocus(undefined);
+  function move(id: string, inTeam: boolean) {
+    if (
+      busy ||
+      uncertain ||
+      loading ||
+      !catalog?.employees.some((e) => e.membershipId === id)
+    )
+      return;
+    if (
+      (inTeam &&
+        (draft.selected.includes(id) || draft.selected.length >= 100)) ||
+      (!inTeam && !draft.selected.includes(id))
+    )
+      return;
+    setPreview(null);
+    setPreviewError("");
     setNotice("");
+    setDraft((d) => {
+      if (inTeam) {
+        if (d.selected.includes(id) || d.selected.length >= 100) return d;
+        return { ...d, selected: [...d.selected, id] };
+      }
+      return {
+        ...d,
+        selected: d.selected.filter((x) => x !== id),
+        leaders: d.leaders.filter((x) => x !== id),
+      };
+    });
+    if (!inTeam && focus === id) setFocus(undefined);
+  }
+  function toggle(id: string) {
+    move(id, !draft.selected.includes(id));
+  }
+  function dragCard(event: DragEvent<HTMLElement>, id: string) {
+    if (disabled) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.setData("application/x-flowchemia-employee", id);
+    event.dataTransfer.effectAllowed = "move";
+    setDragging(id);
+  }
+  function allowDrop(event: DragEvent<HTMLElement>) {
+    if (
+      !disabled &&
+      event.dataTransfer.types.includes("application/x-flowchemia-employee")
+    ) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    }
+  }
+  function drop(event: DragEvent<HTMLElement>, inTeam: boolean) {
+    if (!event.dataTransfer.types.includes("application/x-flowchemia-employee"))
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    const id = event.dataTransfer.getData("application/x-flowchemia-employee");
+    move(id, inTeam);
+    setDragging(null);
   }
   const disabled = loading || busy || uncertain;
   const employees = catalog?.employees ?? [];
@@ -217,14 +274,27 @@ export default function TeamBuilder({
         employees.find((e) => e.membershipId === id),
     )
     .filter((e): e is EmployeeInsight => !!e);
+  const recommendationOrder = new Map(
+    (preview?.recommendations ?? []).map((r, i) => [r.membershipId, i]),
+  );
+  const recommendations = new Map(
+    (preview?.recommendations ?? []).map((r) => [r.membershipId, r]),
+  );
   const filtered = employees.filter(
     (e) =>
+      !draft.selected.includes(e.membershipId) &&
       `${e.displayName} ${e.profile?.jobTitle ?? ""}`
         .toLowerCase()
         .includes(search.trim().toLowerCase()) &&
       (!department || e.profile?.department === department) &&
       (!skillFilter ||
         e.skills?.some((s) => s.id === skillFilter && s.indicator.band)),
+  );
+  filtered.sort(
+    (a, b) =>
+      (recommendationOrder.get(a.membershipId) ?? 1000) -
+        (recommendationOrder.get(b.membershipId) ?? 1000) ||
+      a.displayName.localeCompare(b.displayName),
   );
   const skills = [
     ...new Map(
@@ -411,103 +481,21 @@ export default function TeamBuilder({
               </p>
             )}
             <div className="builder-workspace">
-              <aside
-                className="setup-panel builder-candidates"
-                aria-labelledby="builder-find"
-              >
-                <h2 id="builder-find">Find employees</h2>
-                <label htmlFor="builder-search">Name or job title</label>
-                <input
-                  id="builder-search"
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Find a colleague"
-                />
-                <label htmlFor="builder-department">Department</label>
-                <select
-                  id="builder-department"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                >
-                  <option value="">All departments</option>
-                  {[
-                    ...new Set(
-                      employees
-                        .map((e) => e.profile?.department)
-                        .filter((d): d is string => !!d),
-                    ),
-                  ]
-                    .sort()
-                    .map((d) => (
-                      <option key={d}>{d}</option>
-                    ))}
-                </select>
-                <label htmlFor="builder-skill">
-                  Has current skill feedback
-                </label>
-                <select
-                  id="builder-skill"
-                  value={skillFilter}
-                  onChange={(e) => setSkillFilter(e.target.value)}
-                >
-                  <option value="">Any skill</option>
-                  {skills.map((s) => (
-                    <option value={s.id} key={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="builder-candidate-list">
-                  {filtered.map((e) => (
-                    <label
-                      className={`builder-candidate ${draft.selected.includes(e.membershipId) ? "chosen" : ""}`}
-                      key={e.membershipId}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={draft.selected.includes(e.membershipId)}
-                        disabled={
-                          disabled ||
-                          (!draft.selected.includes(e.membershipId) &&
-                            draft.selected.length >= 100)
-                        }
-                        onChange={() => toggle(e.membershipId)}
-                      />
-                      <ProfilePhoto
-                        name={e.displayName}
-                        membershipId={e.membershipId}
-                        scope={scope}
-                        version={e.profile?.photoUpdatedAt}
-                        className="builder-candidate-photo"
-                      />
-                      <span>
-                        <strong>{e.displayName}</strong>
-                        <small>
-                          {e.profile?.jobTitle || "Job title not added"}
-                        </small>
-                      </span>
-                    </label>
-                  ))}
-                  {filtered.length === 0 && (
-                    <p className="setup-note">
-                      No employees match these filters.
-                    </p>
-                  )}
-                </div>
-                <p className="setup-note">
-                  HR stays independent. People can belong to several teams.
-                </p>
-                {employees.length === 200 && (
-                  <p className="setup-note">
-                    Showing the first 200 eligible employees.
-                  </p>
-                )}
-              </aside>
               <section
-                className="builder-selection"
+                className={`builder-selection ${dragging ? "drop-ready" : ""}`}
+                onDragOver={allowDrop}
+                onDrop={(e) => drop(e, true)}
                 aria-labelledby="builder-selected"
               >
+                <TeamChemistry
+                  value={preview?.teamAnalysis}
+                  loading={
+                    !preview?.teamAnalysis &&
+                    (previewLoading ||
+                      (selected.length > 0 && !preview && !previewError))
+                  }
+                  error={previewError}
+                />
                 <div className="section-heading">
                   <div>
                     <h2 id="builder-selected">
@@ -540,9 +528,9 @@ export default function TeamBuilder({
                   </p>
                 )}
                 {selected.length === 0 ? (
-                  <div className="setup-panel empty-state">
+                  <div className="setup-panel empty-state lineup-empty">
                     <Icon name="people" />
-                    <h3>Start with the people</h3>
+                    <h3>Build your lineup</h3>
                     <p>
                       Select employees from the list. Nothing is saved until you
                       save the team.
@@ -554,7 +542,15 @@ export default function TeamBuilder({
                       container={layout}
                       from={selectedPerson.membershipId}
                     />
-                    <article className="employee-card selected-employee">
+                    <article
+                      className="employee-card selected-employee"
+                      draggable={!disabled}
+                      onDragStart={(event) =>
+                        dragCard(event, selectedPerson.membershipId)
+                      }
+                      onDragEnd={() => setDragging(null)}
+                      data-selected-id={selectedPerson.membershipId}
+                    >
                       <EmployeeCardContent
                         employee={selectedPerson}
                         photoScope={scope}
@@ -643,9 +639,16 @@ export default function TeamBuilder({
                     </div>
                   </div>
                 ) : (
-                  <div className="employee-grid">
+                  <div className="employee-grid builder-lineup">
                     {selected.map((e) => (
-                      <article className="employee-card" key={e.membershipId}>
+                      <article
+                        className="employee-card lineup-player-card"
+                        key={e.membershipId}
+                        draggable={!disabled}
+                        onDragStart={(event) => dragCard(event, e.membershipId)}
+                        onDragEnd={() => setDragging(null)}
+                        data-selected-id={e.membershipId}
+                      >
                         <EmployeeCardContent employee={e} photoScope={scope} />
                         {!e.skills && (
                           <p className="setup-note">
@@ -673,11 +676,136 @@ export default function TeamBuilder({
                   </div>
                 )}
               </section>
-              <aside className="setup-panel builder-analysis">
-                <span className="round-icon teal">
-                  <Icon name="spark" />
-                </span>
-                <h2>Team context</h2>
+              <aside
+                onDragOver={allowDrop}
+                onDrop={(e) => drop(e, false)}
+                className={`setup-panel builder-candidates ${dragging ? "drop-ready" : ""}`}
+                aria-labelledby="builder-find"
+              >
+                <h2 id="builder-find">Suggested employees</h2>
+                <p className="candidate-ranking-note">
+                  Best fit first · feedback-based guidance
+                </p>
+                <details className="candidate-filters">
+                  <summary>Search & filters</summary>
+                  <label htmlFor="builder-search">Name or job title</label>
+                  <input
+                    id="builder-search"
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Find a colleague"
+                  />
+                  <label htmlFor="builder-department">Department</label>
+                  <select
+                    id="builder-department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                  >
+                    <option value="">All departments</option>
+                    {[
+                      ...new Set(
+                        employees
+                          .map((e) => e.profile?.department)
+                          .filter((d): d is string => !!d),
+                      ),
+                    ]
+                      .sort()
+                      .map((d) => (
+                        <option key={d}>{d}</option>
+                      ))}
+                  </select>
+                  <label htmlFor="builder-skill">
+                    Has current skill feedback
+                  </label>
+                  <select
+                    id="builder-skill"
+                    value={skillFilter}
+                    onChange={(e) => setSkillFilter(e.target.value)}
+                  >
+                    <option value="">Any skill</option>
+                    {skills.map((s) => (
+                      <option value={s.id} key={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </details>
+                <p className="candidate-drag-hint">
+                  Drag a card onto the lineup, or use Add. Drag a selected
+                  player back here to remove them.
+                </p>
+                <div className="builder-candidate-list">
+                  {filtered.map((e) => {
+                    const fit = recommendations.get(e.membershipId);
+                    return (
+                      <article
+                        className="candidate-player-card"
+                        key={e.membershipId}
+                        draggable={!disabled}
+                        onDragStart={(event) => dragCard(event, e.membershipId)}
+                        onDragEnd={() => setDragging(null)}
+                        data-candidate-id={e.membershipId}
+                      >
+                        <div className="candidate-player-identity">
+                          <ProfilePhoto
+                            name={e.displayName}
+                            membershipId={e.membershipId}
+                            scope={scope}
+                            version={e.profile?.photoUpdatedAt}
+                            className="builder-candidate-photo"
+                          />
+                          <div>
+                            <strong>{e.displayName}</strong>
+                            <small>{e.profile?.jobTitle || "Employee"}</small>
+                          </div>
+                          <span className="drag-grip" aria-hidden="true">
+                            ⠿
+                          </span>
+                        </div>
+                        <div className="candidate-player-footer">
+                          <span
+                            className={`fit-chip fit-${fit?.fit.toLowerCase() ?? "unknown"}`}
+                            title={fit?.reasons.join(" ")}
+                          >
+                            {previewLoading && !fit
+                              ? "Checking fit…"
+                              : (fit?.label ?? "Not enough evidence")}
+                          </span>
+                          <button
+                            className="candidate-add-button"
+                            disabled={disabled || draft.selected.length >= 100}
+                            aria-label={`Add ${e.displayName} to team`}
+                            onClick={() => move(e.membershipId, true)}
+                          >
+                            Add <span aria-hidden="true">+</span>
+                          </button>
+                        </div>
+                        <small className="candidate-evidence">
+                          {fit?.possibleLinks
+                            ? `${fit.knownLinks} of ${fit.possibleLinks} established connections`
+                            : "Select teammates to compare chemistry"}
+                        </small>
+                      </article>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <p className="setup-note">
+                      No employees match these filters.
+                    </p>
+                  )}
+                </div>
+                <p className="setup-note">
+                  HR stays independent. People can belong to several teams.
+                </p>
+                {employees.length === 200 && (
+                  <p className="setup-note">
+                    Showing the first 200 eligible employees.
+                  </p>
+                )}
+              </aside>
+              <details className="setup-panel builder-analysis">
+                <summary>Skill coverage & evidence</summary>
                 <p>
                   Feedback is a starting point. Use your knowledge of the people
                   and the project alongside it.
@@ -713,7 +841,7 @@ export default function TeamBuilder({
                   access to additional feedback. Your own relationships show
                   only your experience.
                 </p>
-              </aside>
+              </details>
             </div>
             <section className="setup-panel builder-roles">
               <h2>Team responsibilities</h2>

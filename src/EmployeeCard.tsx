@@ -128,6 +128,11 @@ export function EmployeeCardContent({
                 <div
                   className={`employee-skill skill-state-${skill.indicator.state.toLowerCase()}`}
                   key={skill.id}
+                  title={
+                    expanded
+                      ? `${skill.indicator.reports} weekly observations · ${skill.indicator.reviewers} colleagues`
+                      : undefined
+                  }
                 >
                   <div className="skill-caption">
                     <span>{skill.name}</span>
@@ -136,13 +141,6 @@ export function EmployeeCardContent({
                     value={skill.indicator}
                     summary={employee.skillPresentation === "SUMMARY"}
                   />
-                  {expanded && (
-                    <small>
-                      {skill.indicator.reports
-                        ? `${skill.indicator.reports} weekly observation${skill.indicator.reports === 1 ? "" : "s"} · ${skill.indicator.reviewers} colleague${skill.indicator.reviewers === 1 ? "" : "s"}`
-                        : "No observed feedback yet"}
-                    </small>
-                  )}
                 </div>
               ))}
             </div>

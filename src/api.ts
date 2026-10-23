@@ -734,6 +734,27 @@ export type BuilderCatalog = Omit<BuilderCapabilities, "canUse"> & {
   draft: BuilderDraft | null;
   hasHiddenParticipants: boolean;
 };
+export type TeamAnalysis = {
+  chemistry: number | null;
+  label: string;
+  teamwork: string;
+  evidence: "NONE" | "LIMITED" | "ESTABLISHED" | "RESTRICTED";
+  knownPairs: number;
+  totalPairs: number;
+  visiblePairs: number;
+};
+export type FitRecommendation = {
+  membershipId: string;
+  fit: "STRONG" | "GOOD" | "MIXED" | "CAUTION" | "UNKNOWN";
+  label: string;
+  knownLinks: number;
+  possibleLinks: number;
+  reasons: string[];
+};
+export type BuilderPreview = TeamInsights & {
+  teamAnalysis: TeamAnalysis;
+  recommendations: FitRecommendation[];
+};
 export type BuilderSave = {
   requestId: string;
   teamId?: string;
@@ -777,7 +798,7 @@ export const previewBuilder = (
   focus?: string,
   signal?: AbortSignal,
 ) =>
-  apiRequest<TeamInsights>(`${orgPath(org)}/team-builder/preview`, {
+  apiRequest<BuilderPreview>(`${orgPath(org)}/team-builder/preview`, {
     token,
     signal,
     method: "POST",

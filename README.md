@@ -410,3 +410,18 @@ Update the API first and apply its additive team-builder retry-receipt migration
 then pull and restart this frontend. See the backend
 [team builder documentation](https://github.com/MuradEm/FlowChemia-API/blob/main/docs/team-builder.md).
 There are no new frontend dependencies.
+
+The builder can now be opened from **My teams**: use **Create team** or **Edit in
+team builder** to load the selected team. Compact player cards keep every skill
+visible; the candidate rail on the right is ordered by the backend's current
+best-fit heuristic. Drag candidates into the lineup and selected cards back into
+the rail, or use the keyboard/touch Add and Remove buttons. Changes remain drafts
+until saved.
+
+The team chemistry panel shows an approximate 0–100 aggregate, rounded to five,
+plus evidence coverage and short teamwork-potential text. Unknown evidence stays
+neutral; inaccessible/self incoming feedback is excluded and can withhold the
+whole-team number. Individual scores remain hidden. Candidate labels distinguish
+unknown chemistry from poor fit. These are feedback-based signals rather than
+calibrated probabilities. Update and restart both repositories; this release adds
+no migration or dependency.

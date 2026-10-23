@@ -4070,3 +4070,556 @@ textarea {
     max-width: 83px;
   }
 }
+
+/* Compact player cards and a lineup-first builder. */
+.team-page-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.employee-focus {
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+}
+.selected-employee {
+  width: 100%;
+  max-width: 280px;
+  padding: 16px;
+  border-radius: 22px 22px 16px 16px;
+  background: linear-gradient(155deg, #fffdf5 0%, #fff 42%, #eff7f4 100%);
+  border: 1px solid #a8c8be;
+  box-shadow: 0 8px 24px #194e4510;
+}
+.selected-employee .employee-card-accent {
+  background: linear-gradient(90deg, #b68b3b, #dfc885, #a3c8ac);
+}
+.selected-employee .employee-identity {
+  flex-direction: row;
+  gap: 10px;
+}
+.selected-employee .employee-portrait {
+  width: 72px;
+  height: 88px;
+  max-height: none;
+  aspect-ratio: auto;
+  font-size: 26px;
+  border-radius: 14px;
+  border: 1px solid #d4c59c;
+}
+.selected-employee .employee-identity h3 {
+  font-size: 19px;
+  line-height: 1.2;
+}
+.selected-employee .employee-role-label {
+  font-size: 8px;
+  margin: 2px 0 6px;
+  letter-spacing: 0.07em;
+}
+.selected-employee .employee-job-title {
+  font-size: 11px;
+  margin-top: 4px;
+}
+.selected-employee .department-chip {
+  font-size: 9px;
+  padding: 4px 6px;
+  margin-top: 6px;
+}
+.selected-employee .employee-location {
+  font-size: 10px;
+}
+.selected-employee .employee-skills {
+  margin-top: 14px;
+}
+.selected-employee .employee-section-label h4 {
+  font-size: 11px;
+}
+.selected-employee .employee-skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+}
+.selected-employee .employee-skill {
+  min-width: 0;
+  padding: 8px 0;
+  gap: 5px;
+}
+.selected-employee .skill-caption {
+  font-size: 10px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.selected-employee .skill-display {
+  gap: 5px;
+}
+.selected-employee .skill-band-bar {
+  height: 7px;
+  gap: 3px;
+}
+.selected-employee .skill-band-label,
+.selected-employee .insight-indicator {
+  font-size: 10px;
+  line-height: 1.35;
+  gap: 4px;
+}
+.selected-employee .insight-symbol {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.selected-employee .employee-evidence-note {
+  display: none;
+}
+.selected-employee .employee-card-link {
+  padding-top: 12px;
+  font-size: 11px;
+}
+.builder-workspace {
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 22px;
+}
+.builder-selection {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+.builder-candidates {
+  grid-column: 2;
+  grid-row: 1/3;
+  width: auto;
+  padding: 16px;
+  position: sticky;
+  top: 94px;
+  max-height: calc(100dvh - 110px);
+  overflow: auto;
+}
+.builder-analysis {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  padding: 16px;
+}
+.builder-analysis > summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: #224e59;
+  cursor: pointer;
+}
+.builder-analysis > p {
+  font-size: 12px;
+}
+.candidate-ranking-note,
+.candidate-drag-hint {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #526873;
+}
+.builder-candidates h2 {
+  font-size: 17px;
+  margin-bottom: 5px;
+}
+.candidate-filters {
+  margin-top: 14px;
+  border-block: 1px solid #e6edef;
+  padding: 12px 0;
+}
+.candidate-filters summary {
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #224e59;
+}
+.candidate-filters label {
+  display: block;
+  margin-top: 12px;
+}
+.candidate-drag-hint {
+  margin-top: 12px;
+}
+.builder-candidate-list {
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.candidate-player-card {
+  padding: 12px;
+  border: 1px solid #d8e6e4;
+  background: linear-gradient(140deg, #fff, #f3f8f6);
+  border-radius: 13px;
+  cursor: grab;
+  min-width: 0;
+}
+.candidate-player-card:active,
+.lineup-player-card:active {
+  cursor: grabbing;
+}
+.candidate-player-identity {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.candidate-player-identity > div {
+  min-width: 0;
+  flex: 1;
+}
+.candidate-player-identity strong {
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.candidate-player-identity small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #526873;
+  overflow-wrap: anywhere;
+}
+.candidate-player-card .builder-candidate-photo {
+  width: 40px;
+  height: 46px;
+  border-radius: 9px;
+  font-size: 14px;
+}
+.drag-grip {
+  font-size: 20px;
+  color: #728c92;
+}
+.candidate-player-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.fit-chip {
+  display: inline-block;
+  font-size: 9px;
+  line-height: 1.5;
+  color: #526873;
+  background: #edf2f3;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+.fit-strong,
+.fit-good {
+  color: #256344;
+  background: #e4f3e9;
+}
+.fit-mixed {
+  color: #79591e;
+  background: #faf0d8;
+}
+.fit-caution {
+  color: #944a35;
+  background: #fbece6;
+}
+.candidate-add-button {
+  background: #fff;
+  border: 1px solid #b6cfd1;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #125565;
+  padding: 7px 9px;
+  flex-shrink: 0;
+}
+.candidate-add-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.builder-selection.drop-ready {
+  outline: 2px dashed #57a297;
+  outline-offset: 8px;
+  border-radius: 16px;
+}
+.builder-candidates.drop-ready {
+  border: 2px dashed #57a297;
+}
+.lineup-empty {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #b4ceca;
+  background: linear-gradient(135deg, #f7fbf9, #edf6f1);
+  border-radius: 18px;
+}
+.builder-lineup {
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #d2e4db;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #f2f8f4, #e8f3ed);
+  min-height: 250px;
+  align-items: start;
+}
+.builder-lineup > .lineup-player-card {
+  padding: 14px;
+  width: 100%;
+  border-color: #d7ccab;
+  border-radius: 21px 21px 14px 14px;
+  background: linear-gradient(155deg, #fffcf2, #fff 48%, #edf6ef);
+  cursor: grab;
+}
+.builder-lineup .employee-card-accent {
+  background: linear-gradient(90deg, #b58d42, #e3d4a6, #9fc3a9);
+}
+.builder-lineup .employee-identity {
+  gap: 9px;
+}
+.builder-lineup .employee-portrait {
+  width: 54px;
+  height: 66px;
+}
+.builder-lineup .employee-identity h3 {
+  font-size: 16px;
+}
+.builder-lineup .employee-role-label {
+  font-size: 8px;
+}
+.builder-lineup .employee-job-title {
+  font-size: 10px;
+}
+.builder-lineup .employee-evidence-note {
+  display: none;
+}
+.builder-lineup .employee-skill-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 10px;
+}
+.builder-lineup .skill-caption {
+  font-size: 10px;
+}
+.builder-lineup .skill-band-label,
+.builder-lineup .insight-indicator {
+  font-size: 9px;
+}
+.builder-lineup .skill-band-bar {
+  height: 6px;
+  gap: 2px;
+}
+.builder-lineup .employee-section-label h4 {
+  font-size: 10px;
+}
+.builder-lineup .employee-skill {
+  padding: 7px 0;
+}
+.team-chemistry-panel {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  border: 1px solid #cfdfda;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #f1f8f3, #fff);
+  padding: 20px;
+  margin-bottom: 22px;
+}
+.team-chemistry-number {
+  min-width: 100px;
+  flex-shrink: 0;
+  text-align: center;
+  border-right: 1px solid #d8e7e0;
+  padding-right: 20px;
+}
+.team-chemistry-number > span {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: #526873;
+  font-weight: 700;
+}
+.team-chemistry-number strong {
+  display: block;
+  font-size: 46px;
+  line-height: 1.15;
+  letter-spacing: -2px;
+  color: #266a4f;
+  margin: 6px 0;
+}
+.team-chemistry-number small {
+  display: block;
+  font-size: 9px;
+  color: #526873;
+}
+.team-chemistry-copy {
+  min-width: 0;
+}
+.team-chemistry-copy h2 {
+  font-size: 18px;
+  line-height: 1.3;
+}
+.team-chemistry-copy > p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #46636e;
+  margin-top: 6px;
+}
+.team-chemistry-copy > small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #526873;
+  margin-top: 8px;
+}
+.chemistry-evidence {
+  display: inline-block;
+  font-size: 9px;
+  background: #e6f0eb;
+  color: #32644d;
+  padding: 4px 7px;
+  border-radius: 6px;
+  margin-top: 9px;
+}
+.chemistry-mixed .team-chemistry-number strong {
+  color: #8c6b27;
+}
+.chemistry-difficult .team-chemistry-number strong {
+  color: #a4503e;
+}
+.chemistry-unknown .team-chemistry-number strong {
+  color: #738b91;
+}
+@media (max-width: 1250px) {
+  .builder-workspace {
+    grid-template-columns: minmax(0, 1fr) 240px;
+  }
+  .builder-selection .employee-focus {
+    grid-template-columns: 1fr;
+  }
+  .builder-selection .employee-grid.builder-lineup {
+    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  }
+  .builder-lineup {
+    padding: 12px;
+  }
+  .builder-candidates {
+    width: auto;
+  }
+}
+@media (max-width: 1000px) {
+  .builder-workspace {
+    grid-template-columns: 1fr;
+  }
+  .builder-selection {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .builder-candidates {
+    grid-column: 1;
+    grid-row: 2;
+    position: static;
+    max-height: none;
+  }
+  .builder-analysis {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .builder-candidate-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 360px;
+    overflow: auto;
+  }
+}
+@media (max-width: 640px) {
+  .employee-focus {
+    grid-template-columns: 1fr;
+  }
+  .selected-employee {
+    position: relative;
+    margin-inline: auto;
+  }
+  .team-chemistry-panel {
+    gap: 12px;
+    padding: 15px;
+  }
+  .team-chemistry-number {
+    min-width: 80px;
+    padding-right: 12px;
+  }
+  .team-chemistry-number strong {
+    font-size: 38px;
+  }
+  .team-chemistry-copy h2 {
+    font-size: 16px;
+  }
+  .builder-selection .employee-grid.builder-lineup {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+  .builder-candidate-list {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 380px) {
+  .team-chemistry-panel {
+    align-items: flex-start;
+  }
+  .team-chemistry-number {
+    min-width: 65px;
+    padding-right: 10px;
+  }
+  .team-chemistry-number strong {
+    font-size: 32px;
+  }
+  .team-chemistry-copy h2 {
+    font-size: 14px;
+  }
+  .selected-employee {
+    max-width: 100%;
+  }
+  .selected-employee .employee-portrait {
+    width: 60px;
+    height: 74px;
+  }
+}
+.candidate-evidence {
+  display: block;
+  margin-top: 7px;
+  font-size: 9px;
+  line-height: 1.5;
+  color: #617780;
+}
+/* Keep directional experiences beside each other when both are visible. */
+.relationship-card .builder-experience,
+.relationship-card .direction-summary {
+  font-size: 11px;
+  margin-top: 12px;
+}
+.relationship-card .builder-experience > div,
+.relationship-card .direction-summary > div {
+  gap: 4px;
+  padding: 4px 0;
+}
+.relationship-card .insight-indicator {
+  font-size: 11px;
+  line-height: 1.4;
+  gap: 5px;
+}
+.relationship-card .insight-symbol {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+.relationship-card:has(.builder-experience + .builder-experience)
+  .builder-experience,
+.relationship-card:has(.direction-summary + .direction-summary)
+  .direction-summary {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: top;
+  width: calc(50% - 7px);
+}
+.relationship-card .builder-experience:has(+ .builder-experience),
+.relationship-card .direction-summary:has(+ .direction-summary) {
+  margin-right: 14px;
+}
+.relationship-card .builder-experience > strong,
+.relationship-card .direction-summary > strong {
+  font-size: 11px;
+  line-height: 1.5;
+}

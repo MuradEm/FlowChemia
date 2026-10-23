@@ -84,6 +84,7 @@ export default function LiveWorkspace({
   }
   const [builderCapabilities, setBuilderCapabilities] =
     useState<BuilderCapabilities | null>(null);
+  const [builderStart, setBuilderStart] = useState<string>();
   const [ownCard, setOwnCard] = useState<EmployeeInsight | null>(null);
   const [cardLoading, setCardLoading] = useState(false),
     [cardError, setCardError] = useState("");
@@ -324,6 +325,8 @@ export default function LiveWorkspace({
     if (view === "builder" && builderCapabilities?.canUse)
       return (
         <TeamBuilder
+          key={builderStart ?? "new"}
+          initialTeamId={builderStart}
           session={session}
           membership={membership}
           onExpired={onExpired}
@@ -377,6 +380,18 @@ export default function LiveWorkspace({
     if (view === "teams")
       return (
         <TeamView
+          builder={
+            builderCapabilities?.canUse
+              ? {
+                  canCreate: builderCapabilities.canCreate,
+                  editableIds: builderCapabilities.teams.map((t) => t.id),
+                  onOpen: (id?: string) => {
+                    setBuilderStart(id);
+                    go("builder");
+                  },
+                }
+              : undefined
+          }
           initialTeam={teamReturn.current}
           onProfile={(id, teamId) => {
             teamReturn.current = { id: teamId, focus: id };
@@ -559,6 +574,8 @@ export default function LiveWorkspace({
         cardError={cardError}
         onLoadCard={() => void loadOwnCard()}
         onNavigate={(next) => {
+          if (next === "builder" && view !== "builder")
+            setBuilderStart(undefined);
           if (go(next) && (next === "home" || view === "profile"))
             void refresh();
         }}
